@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Академический редактор — Профессор Копцева</title>
+    
+    <!-- Quill.js -->
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+    
+    <!-- Экспорт -->
+    <script src="https://unpkg.com/html-docx-js/dist/html-docx.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <!-- Наши стили -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Верхняя панель -->
+        <div class="top-bar">
+            <h1>🎓 Академический редактор</h1>
+            <div class="controls">
+                <select class="gost-select" id="gost-select" onchange="applyGost()">
+                    <option value="gost-report">ГОСТ 7.32-2017 (Отчёт о НИР)</option>
+                    <option value="gost-thesis">ГОСТ 7.1-2003 (Диссертация)</option>
+                    <option value="gost-article">Статья для журнала ВАК</option>
+                    <option value="gost-ord">ГОСТ Р 7.0.97-2016 (ОРД)</option>
+                    <option value="free">Свободное форматирование</option>
+                </select>
+                <button class="btn" onclick="generateTOC()"> Оглавление</button>
+                <button class="btn" onclick="generateBibliography()"> Список литературы</button>
+                <button class="btn" onclick="toggleTheme()" id="theme-btn">🌙 Темная тема</button>
+				<div class="voice-lang-switcher" style="margin-right: 10px;">
+					<button class="voice-lang-btn active" id="editor-lang-ru" onclick="setEditorVoiceLang('ru-RU')" title="Русский">🇷🇺</button>
+					<button class="voice-lang-btn" id="editor-lang-cn" onclick="setEditorVoiceLang('zh-CN')" title="中文">🇨🇳</button>
+				</div>
+				<button class="btn" onclick="toggleEditorVoice()" id="editor-voice-btn" title="Диктовать текст в редактор">🎤 Диктовать</button>
+                <button class="btn btn-primary" onclick="exportDocx()">📄 Экспорт DOCX</button>
+                <button class="btn btn-primary" onclick="exportPdf()">📕 Экспорт PDF</button>
+            </div>
+        </div>
+        
+        <!-- Основной контент -->
+        <div class="main-content">
+            <!-- Редактор -->
+            <div class="editor-section">
+                <div class="editor-container gost-report" id="editor-container">
+                    <div id="editor">
+                        <h2>Заголовок документа</h2>
+                        <p>Начните писать ваш текст здесь...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Боковая панель -->
+            <div class="terms-section">
+                <h3>📚 Термины</h3>
+                <button class="add-term-btn" onclick="showAddTermModal()">+ Добавить термин</button>
+                <div id="terms-list"></div>
+                
+                <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid var(--border-color);">
+                    <h3>📥 Загрузить PDF</h3>
+                    <div id="upload-zone" style="border: 2px dashed #667eea; border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.3s; margin-top: 10px;" 
+                         ondragover="handleDragOver(event)" 
+                         ondragleave="handleDragLeave(event)" 
+                         ondrop="handleDrop(event)"
+                         onclick="document.getElementById('pdf-input').click()">
+                        <div style="font-size: 40px; margin-bottom: 10px;">📄</div>
+                        <div style="font-size: 14px; color: var(--text-muted);">Перетащите PDF сюда<br>или нажмите для выбора</div>
+                    </div>
+                    <input type="file" id="pdf-input" accept=".pdf" style="display: none;" onchange="handleFileSelect(event)">
+                    <div id="upload-status" style="margin-top: 10px; font-size: 12px; color: var(--text-muted);"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Чат -->
+        <div class="chat-section">
+            <div class="chat-header">
+                <h3>🤖 Помощник — Профессор Копцева</h3>
+                <div class="chat-header-actions">
+                    <span id="chat-status" style="color: var(--text-muted); font-size: 12px;">Подключение...</span>
+                    <button class="clear-chat-btn" onclick="clearChatHistory()">🗑️ Очистить</button>
+                </div>
+            </div>
+            <div class="chat-messages" id="chat-messages">
+                <div class="chat-message bot">Здравствуйте! Я — Наталья Петровна Копцева. Чем могу помочь с вашей работой?</div>
+            </div>
+            <div class="chat-input-container">
+				<input type="text" class="chat-input" id="chat-input" placeholder="Задайте вопрос или нажмите 🎤 для диктовки..." onkeypress="if(event.key === 'Enter') sendChat()">
+				<div class="voice-lang-switcher">
+					<button class="voice-lang-btn active" id="chat-lang-ru" onclick="setChatVoiceLang('ru-RU')" title="Русский">🇷🇺</button>
+					<button class="voice-lang-btn" id="chat-lang-cn" onclick="setChatVoiceLang('zh-CN')" title="中文">🇨🇳</button>
+				</div>
+				<button class="voice-btn" id="chat-voice-btn" onclick="toggleChatVoice()" title="Голосовой ввод"></button>
+				<button class="chat-send" id="chat-send" onclick="sendChat()">Отправить</button>
+				<button class="chat-send" style="background: #4caf50;" onclick="openSearchModal()" title="Расширенный поиск в научных базах">🔍 Онлайн</button>
+			</div>
+        </div>
+    </div>
+    
+    <!-- Модальное окно термина -->
+    <div class="modal" id="term-modal">
+        <div class="modal-content">
+            <h3>Добавить термин</h3>
+            <input type="text" id="term-input" placeholder="Введите термин...">
+            <textarea id="term-definition-input" placeholder="Определение (необязательно)..." style="width: 100%; padding: 10px; border: 2px solid var(--border-color); border-radius: 8px; margin-bottom: 15px; font-size: 14px; min-height: 80px; background: var(--bg-container); color: var(--text-main);"></textarea>
+            <div class="modal-buttons">
+                <button class="btn" onclick="closeModal()">Отмена</button>
+                <button class="btn btn-primary" onclick="addTerm()">Добавить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно поиска -->
+    <div class="modal" id="search-modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <h3>🔍 Расширенный поиск научных статей</h3>
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Запрос *</label>
+                <input type="text" id="search-query" placeholder="Введите тему или вопрос...">
+            </div>
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Автор (необязательно)</label>
+                <input type="text" id="search-author" placeholder="Например: Копцева">
+            </div>
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <div style="flex: 1;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">Год от</label>
+                    <input type="number" id="search-year-from" placeholder="2000" min="1900" max="2026">
+                </div>
+                <div style="flex: 1;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">Год до</label>
+                    <input type="number" id="search-year-to" placeholder="2026" min="1900" max="2026">
+                </div>
+            </div>
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Количество результатов</label>
+                <select id="search-limit">
+                    <option value="5">5 статей</option>
+                    <option value="10">10 статей</option>
+                    <option value="20">20 статей</option>
+                    <option value="50">50 статей</option>
+                </select>
+            </div>
+            <div style="margin-bottom: 15px;">
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <input type="checkbox" id="search-open-access" checked>
+                    <span>Только открытый доступ (Open Access)</span>
+                </label>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn" onclick="closeSearchModal()">Отмена</button>
+                <button class="btn btn-primary" onclick="executeSearch()">🔍 Искать</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Плавающее меню умных действий -->
+	<div class="smart-menu" id="smart-menu">
+		<div class="smart-menu-item" onmousedown="event.preventDefault(); executeSmartAction('rewrite_scientific')">
+			<span class="icon">🎓</span>
+			<span>Сделать более научным</span>
+		</div>
+		<div class="smart-menu-item" onmousedown="event.preventDefault(); executeSmartAction('translate_cn')">
+			<span class="icon">🇨🇳</span>
+			<span>Перевести на китайский</span>
+		</div>
+		<div class="smart-menu-item" onmousedown="event.preventDefault(); executeSmartAction('find_sources')">
+			<span class="icon">🔍</span>
+			<span>Найти источники</span>
+		</div>
+		<div class="smart-menu-item" onmousedown="event.preventDefault(); executeSmartAction('fix_style')">
+			<span class="icon">✏️</span>
+			<span>Исправить стиль и ошибки</span>
+		</div>
+	</div>
+
+    <!-- Индикатор обработки -->
+    <div class="smart-processing" id="smart-processing">
+        <div class="spinner"></div>
+        <div id="smart-processing-text">Обрабатываю...</div>
+    </div>
+
+    <!-- Попап с источниками -->
+    <div class="smart-sources-popup" id="smart-sources-popup">
+        <h3 style="margin-bottom: 15px;">📚 Найденные источники</h3>
+        <div id="smart-sources-content"></div>
+        <div style="text-align: right; margin-top: 15px;">
+            <button class="btn" onclick="closeSourcesPopup()">Закрыть</button>
+        </div>
+    </div>
+
+    <!-- Наши скрипты -->
+    <script src="js/utils.js"></script>
+    <script src="js/editor.js"></script>
+    <script src="js/chat.js"></script>
+    <script src="js/smart-editor.js"></script>
+    <script src="js/search.js"></script>
+	<script src="js/voice.js"></script>
+    <script src="js/app.js"></script>
+	<!-- Индикатор голосового ввода -->
+	<div class="voice-status" id="voice-status">
+    <div class="recording-indicator"></div>
+    <span id="voice-status-text">Слушаю...</span>
+</div>
+</body>
+</html>
