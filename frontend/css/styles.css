@@ -90,7 +90,7 @@ body {
 }
 
 .container {
-    max-width: 1400px;
+    max-width: 98%;  /* Было 1600px — теперь почти на весь экран */
     margin: 0 auto;
     background: var(--bg-container);
     border-radius: 8px;
