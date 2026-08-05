@@ -811,6 +811,10 @@ body.dark-theme .voice-lang-btn.active {
     background: #f5f5f5;
     border: 1px solid #ddd;
     transition: color 0.3s;
+    position: fixed;
+    top: 16px;
+    right: 140px;
+    z-index: 100;
 }
 
 .logout-btn {
