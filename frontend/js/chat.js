@@ -3,6 +3,7 @@
 // ═══════════════════════════════════════════════════════════
 //const API_URL = 'http://localhost:8000'; // Убедись, что порт совпадает с твоим
 
+const API_URL = '/api'; 
 let chatHistory = [];
 let allSources = [];
 let isStreaming = false;

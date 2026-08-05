@@ -2,7 +2,7 @@
 // УТИЛИТЫ
 // ═══════════════════════════════════════════════════════════
 
-const API_URL = 'http://localhost:8000';
+//const API_URL = 'http://localhost:8000';
 
 function showNotification(message) {
     const notification = document.createElement('div');
