@@ -13,7 +13,13 @@ sources: 'Источники',
 smartActions: 'Умные действия',
 rewrite: 'Научный рерайт',
 translate: 'Перевод на китайский',
-findSources: 'Найти источники'
+findSources: 'Найти источники',
+tableOfContents: 'Оглавление',
+lightTheme: 'Светлая тема',
+bibliography: 'Список литературы',
+dictate: 'Диктовать',
+dragDropText: 'Перетащите PDF-файл сюда или нажмите для выбора',
+voiceInput: 'Голосовой ввод'
 },
 zh: {
 exportDocx: '导出 DOCX',
@@ -29,7 +35,13 @@ sources: '来源',
 smartActions: '智能操作',
 rewrite: '学术改写',
 translate: '翻译成中文',
-findSources: '查找来源'
+findSources: '查找来源',
+tableOfContents: '目录',
+lightTheme: '浅色主题',
+bibliography: '参考文献',
+dictate: '听写',
+dragDropText: '将 PDF 文件拖放到此处或点击选择',
+voiceInput: '语音输入'
 }
 };
 
@@ -90,6 +102,35 @@ const langToggle = document.getElementById('lang-toggle');
 if (langToggle) {
     langToggle.textContent = currentLang === 'ru' ? '🇨🇳' : '🇷🇺';
 }
+
+// Оглавление
+const tocBtn = document.querySelector('[onclick="generateTOC()"]');
+if (tocBtn) tocBtn.textContent = t.tableOfContents;
+
+// Светлая тема
+const themeBtn = document.getElementById('theme-toggle-btn');
+if (themeBtn) {
+    // Обновляем только иконку и текст, сохраняя функцию toggleTheme
+    const icon = currentLang === 'ru' ? '🌙' : '☀️';
+    const text = currentLang === 'ru' ? 'Темная тема' : 'Светлая тема';
+    themeBtn.textContent = `${icon} ${text}`;
+}
+
+// Список литературы
+const biblioBtn = document.querySelector('[onclick="generateBibliography()"]');
+if (biblioBtn) biblioBtn.textContent = t.bibliography;
+
+// Диктовать (кнопка голосового ввода в редакторе)
+const dictateBtn = document.getElementById('editor-voice-btn');
+if (dictateBtn) {
+    // Сохраняем иконку микрофона и добавляем перевод
+    const micIcon = '🎤 ';
+    dictateBtn.textContent = `${micIcon}${t.dictate}`;
+}
+
+// Текст зоны перетаскивания файлов
+const dragDropText = document.getElementById('drag-drop-text');
+if (dragDropText) dragDropText.textContent = t.dragDropText;
 }
 
 // Инициализация языка при загрузке
@@ -105,3 +146,14 @@ if (langToggle) {
     });
 }
 });
+
+// Экспорт переменных для использования в других скриптах (например, voice.js)
+window.translations = translations;
+window.currentLang = currentLang;
+
+// Обновляем currentLang при смене языка
+const originalSetLanguage = setLanguage;
+setLanguage = function(lang) {
+    originalSetLanguage(lang);
+    window.currentLang = currentLang;
+};

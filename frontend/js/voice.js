@@ -6,8 +6,12 @@ let chatRecognition = null;
 let editorRecognition = null;
 let isChatRecording = false;
 let isEditorRecording = false;
-let chatVoiceLang = 'ru-RU';  // Язык для чата
-let editorVoiceLang = 'ru-RU';  // Язык для редактора
+
+// Получение языка на основе текущего языка интерфейса
+function getVoiceLangFromInterface() {
+    const lang = typeof window.currentLang !== 'undefined' ? window.currentLang : 'ru';
+    return lang === 'ru' ? 'ru-RU' : 'zh-CN';
+}
 
 // Проверка поддержки Web Speech API
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -17,49 +21,15 @@ if (!SpeechRecognition) {
 }
 
 // ═══════════════════════════════════════════════════════════
-// ПЕРЕКЛЮЧЕНИЕ ЯЗЫКА
+// ПЕРЕКЛЮЧЕНИЕ ЯЗЫКА (удалено - теперь язык определяется автоматически)
 // ═══════════════════════════════════════════════════════════
 
-function setChatVoiceLang(lang) {
-    chatVoiceLang = lang;
-    document.getElementById('chat-lang-ru').classList.toggle('active', lang === 'ru-RU');
-    document.getElementById('chat-lang-cn').classList.toggle('active', lang === 'zh-CN');
-    localStorage.setItem('chat_voice_lang', lang);
-    
-    // Если идет запись, перезапускаем с новым языком
-    if (isChatRecording) {
-        stopChatVoice();
-        setTimeout(() => startChatVoice(), 100);
-    }
-    
-    showNotification(`Язык распознавания: ${lang === 'ru-RU' ? 'Русский' : '中文'}`);
-}
-
-function setEditorVoiceLang(lang) {
-    editorVoiceLang = lang;
-    document.getElementById('editor-lang-ru').classList.toggle('active', lang === 'ru-RU');
-    document.getElementById('editor-lang-cn').classList.toggle('active', lang === 'zh-CN');
-    localStorage.setItem('editor_voice_lang', lang);
-    
-    // Если идет запись, перезапускаем с новым языком
-    if (isEditorRecording) {
-        stopEditorVoice();
-        setTimeout(() => startEditorVoice(), 100);
-    }
-    
-    showNotification(`Язык распознавания: ${lang === 'ru-RU' ? 'Русский' : '中文'}`);
-}
+// Функции setChatVoiceLang и setEditorVoiceLang удалены
+// Язык теперь определяется автоматически на основе currentLang из i18n.js
 
 function loadVoiceLangSettings() {
-    const savedChatLang = localStorage.getItem('chat_voice_lang');
-    if (savedChatLang) {
-        setChatVoiceLang(savedChatLang);
-    }
-    
-    const savedEditorLang = localStorage.getItem('editor_voice_lang');
-    if (savedEditorLang) {
-        setEditorVoiceLang(savedEditorLang);
-    }
+    // Загрузка настроек больше не требуется
+    // Язык определяется автоматически из currentLang
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -70,7 +40,7 @@ function initChatVoice() {
     if (!SpeechRecognition) return;
     
     chatRecognition = new SpeechRecognition();
-    chatRecognition.lang = chatVoiceLang;
+    chatRecognition.lang = getVoiceLangFromInterface();
     chatRecognition.continuous = true;
     chatRecognition.interimResults = true;
     
@@ -79,7 +49,7 @@ function initChatVoice() {
     chatRecognition.onstart = function() {
         isChatRecording = true;
         document.getElementById('chat-voice-btn').classList.add('recording');
-        const langName = chatVoiceLang === 'ru-RU' ? 'Русский' : '中文';
+        const langName = getVoiceLangFromInterface() === 'ru-RU' ? 'Русский' : '中文';
         showVoiceStatus(`Слушаю (${langName})... Говорите вопрос`);
     };
     
@@ -142,7 +112,7 @@ function toggleChatVoice() {
 
 function startChatVoice() {
     try {
-        chatRecognition.lang = chatVoiceLang;
+        chatRecognition.lang = getVoiceLangFromInterface();
         chatRecognition.start();
     } catch (e) {
         console.error('Ошибка запуска распознавания:', e);
@@ -166,7 +136,7 @@ function initEditorVoice() {
     if (!SpeechRecognition) return;
     
     editorRecognition = new SpeechRecognition();
-    editorRecognition.lang = editorVoiceLang;
+    editorRecognition.lang = getVoiceLangFromInterface();
     editorRecognition.continuous = true;
     editorRecognition.interimResults = true;
     
@@ -177,7 +147,7 @@ function initEditorVoice() {
         isEditorRecording = true;
         const range = quill.getSelection();
         editorStartIndex = range ? range.index : quill.getLength();
-        const langName = editorVoiceLang === 'ru-RU' ? 'Русский' : '中文';
+        const langName = getVoiceLangFromInterface() === 'ru-RU' ? 'Русский' : '中文';
         showVoiceStatus(`Диктую в редактор (${langName})... Говорите текст`);
     };
     
@@ -239,25 +209,27 @@ function toggleEditorVoice() {
     }
     
     const btn = document.getElementById('editor-voice-btn');
+    const t = typeof window.translations !== 'undefined' ? window.translations[window.currentLang || 'ru'] : null;
+    const curLang = typeof window.currentLang !== 'undefined' ? window.currentLang : 'ru';
     
     if (isEditorRecording) {
         stopEditorVoice();
         if (btn) {
             btn.classList.remove('recording');
-            btn.textContent = '🎤 Диктовать';
+            btn.textContent = '🎤 ' + (t && t.dictate ? t.dictate : 'Диктовать');
         }
     } else {
         startEditorVoice();
         if (btn) {
             btn.classList.add('recording');
-            btn.textContent = '⏹️ Остановить';
+            btn.textContent = '⏹️ ' + (curLang === 'ru' ? 'Остановить' : '停止');
         }
     }
 }
 
 function startEditorVoice() {
     try {
-        editorRecognition.lang = editorVoiceLang;
+        editorRecognition.lang = getVoiceLangFromInterface();
         editorRecognition.start();
     } catch (e) {
         console.error('Ошибка запуска распознавания:', e);
@@ -295,6 +267,4 @@ function hideVoiceStatus() {
 // Глобальные функции
 window.toggleChatVoice = toggleChatVoice;
 window.toggleEditorVoice = toggleEditorVoice;
-window.setChatVoiceLang = setChatVoiceLang;
-window.setEditorVoiceLang = setEditorVoiceLang;
 window.loadVoiceLangSettings = loadVoiceLangSettings;

@@ -30,13 +30,9 @@
                     <option value="gost-ord">ГОСТ Р 7.0.97-2016 (ОРД)</option>
                     <option value="free">Свободное форматирование</option>
                 </select>
-                <button class="btn" onclick="generateTOC()"> Оглавление</button>
-                <button class="btn" onclick="generateBibliography()"> Список литературы</button>
-                <button class="btn" onclick="toggleTheme()" id="theme-btn">🌙 Темная тема</button>
-				<div class="voice-lang-switcher" style="margin-right: 10px;">
-					<button class="voice-lang-btn active" id="editor-lang-ru" onclick="setEditorVoiceLang('ru-RU')" title="Русский">🇷🇺</button>
-					<button class="voice-lang-btn" id="editor-lang-cn" onclick="setEditorVoiceLang('zh-CN')" title="中文">🇨🇳</button>
-				</div>
+                <button class="btn" onclick="generateTOC()" id="toc-btn"> Оглавление</button>
+                <button class="btn" onclick="generateBibliography()" id="bibliography-btn"> Список литературы</button>
+                <button class="btn" onclick="toggleTheme()" id="theme-toggle-btn">🌙 Темная тема</button>
 				<button class="btn" onclick="toggleEditorVoice()" id="editor-voice-btn" title="Диктовать текст в редактор">🎤 Диктовать</button>
                 <button class="btn btn-primary" id="export-docx-btn" onclick="exportDocx()">📄 Экспорт DOCX</button>
                 <button class="btn btn-primary" id="export-pdf-btn" onclick="exportPdf()">📕 Экспорт PDF</button>
@@ -70,7 +66,7 @@
                          ondrop="handleDrop(event)"
                          onclick="document.getElementById('pdf-input').click()">
                         <div style="font-size: 40px; margin-bottom: 10px;">📄</div>
-                        <div style="font-size: 14px; color: var(--text-muted);">Перетащите PDF сюда<br>или нажмите для выбора</div>
+                        <div id="drag-drop-text" style="font-size: 14px; color: var(--text-muted);">Перетащите PDF сюда<br>или нажмите для выбора</div>
                     </div>
                     <input type="file" id="pdf-input" accept=".pdf" style="display: none;" onchange="handleFileSelect(event)">
                     <div id="upload-status" style="margin-top: 10px; font-size: 12px; color: var(--text-muted);"></div>
@@ -92,10 +88,6 @@
             </div>
             <div class="chat-input-container">
 				<input type="text" class="chat-input" id="chat-input" placeholder="Задайте вопрос или нажмите 🎤 для диктовки..." onkeypress="if(event.key === 'Enter') sendChat()">
-				<div class="voice-lang-switcher">
-					<button class="voice-lang-btn active" id="chat-lang-ru" onclick="setChatVoiceLang('ru-RU')" title="Русский">🇷🇺</button>
-					<button class="voice-lang-btn" id="chat-lang-cn" onclick="setChatVoiceLang('zh-CN')" title="中文">🇨🇳</button>
-				</div>
 				<button class="voice-btn" id="chat-voice-btn" onclick="toggleChatVoice()" title="Голосовой ввод"></button>
 				<button class="chat-send" id="send-btn" onclick="sendChat()">Отправить</button>
 				<button class="chat-send" style="background: #4caf50;" onclick="openSearchModal()" title="Расширенный поиск в научных базах">🔍 Онлайн</button>
