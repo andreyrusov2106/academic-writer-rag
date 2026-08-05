@@ -126,6 +126,8 @@ body {
     gap: 8px;
     flex-wrap: wrap;
     align-items: center;
+    position: relative;
+    z-index: 10; /* Ниже, чем user-widget (1000) */
 }
 
 .gost-select {
@@ -802,20 +804,6 @@ body.dark-theme .voice-lang-btn.active {
     background: #f5f5f5; border: 1px solid #ddd; border-radius: 8px;
     cursor: pointer; font-size: 13px; z-index: 100;
 }
-/* Индикатор использования */
-#usage-indicator {
-    font-size: 13px;
-    font-weight: 600;
-    padding: 8px 12px;
-    border-radius: 8px;
-    background: #f5f5f5;
-    border: 1px solid #ddd;
-    transition: color 0.3s;
-    position: fixed;
-    top: 16px;
-    right: 140px;
-    z-index: 100;
-}
 
 .logout-btn {
     padding: 8px 16px;
@@ -829,4 +817,65 @@ body.dark-theme .voice-lang-btn.active {
 
 .logout-btn:hover {
     background: #eee;
+}
+
+/* Floating Widget в правом нижнем углу */
+.user-widget {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    padding: 10px 16px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    z-index: 1000;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.user-widget:hover {
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.2);
+    transform: translateY(-2px);
+}
+
+#usage-indicator {
+    font-weight: 600;
+    white-space: nowrap;
+    color: #4caf50;
+}
+
+.logout-btn-widget {
+    background: #f44336;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: background 0.2s;
+}
+
+.logout-btn-widget:hover {
+    background: #d32f2f;
+}
+
+/* Адаптивность для мобильных */
+@media (max-width: 768px) {
+    .user-widget {
+        bottom: 10px;
+        right: 10px;
+        padding: 8px 12px;
+        font-size: 12px;
+    }
+}
+
+/* Кнопка выхода скрыта по умолчанию, показывается после входа */
+#logout-btn {
+    display: none;
 }

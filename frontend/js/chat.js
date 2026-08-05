@@ -16,6 +16,7 @@ let currentUser = JSON.parse(localStorage.getItem('academic_writer_user') || 'nu
 function initAuth() {
     const modal = document.getElementById('auth-modal');
     const logoutBtn = document.getElementById('logout-btn');
+    const userWidget = document.getElementById('user-widget');
     
     document.querySelectorAll('.auth-tab').forEach(tab => {
         tab.addEventListener('click', () => {
@@ -34,10 +35,12 @@ function initAuth() {
     
     if (authToken && currentUser) {
         if (modal) modal.style.display = 'none';
+        if (userWidget) userWidget.style.display = 'flex';
         if (logoutBtn) logoutBtn.style.display = 'block';
         updateUsageIndicator(); // ✅ Показываем лимиты при загрузке
     } else {
         if (modal) modal.style.display = 'flex';
+        if (userWidget) userWidget.style.display = 'none';
         if (logoutBtn) logoutBtn.style.display = 'none';
     }
 }
@@ -80,6 +83,8 @@ async function handleLogin(e) {
         localStorage.setItem('academic_writer_token', authToken);
         localStorage.setItem('academic_writer_user', JSON.stringify(currentUser));
         document.getElementById('auth-modal').style.display = 'none';
+        const userWidget = document.getElementById('user-widget');
+        if (userWidget) userWidget.style.display = 'flex';
         document.getElementById('logout-btn').style.display = 'block';
         updateUsageIndicator(); // ✅ Обновляем индикатор
     } catch (err) { showError('login', err.message); }
@@ -116,6 +121,8 @@ function logout() {
     localStorage.removeItem('academic_writer_token');
     localStorage.removeItem('academic_writer_user');
     document.getElementById('auth-modal').style.display = 'flex';
+    const userWidget = document.getElementById('user-widget');
+    if (userWidget) userWidget.style.display = 'none';
     document.getElementById('logout-btn').style.display = 'none';
 }
 

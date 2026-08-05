@@ -1,1 +1,1 @@
-Nothing needs to be added to .gitignore since only a Python source file (`backend/rag_api.py`) was modified and there are no build artifacts, dependencies, or temporary files in the changes.
+(frontend/ademic-writer.html, frontend/css/styles.css, frontend/js/chat.js are all source files, no build artifacts, dependencies, or temp files in the changes, so output nothing)
