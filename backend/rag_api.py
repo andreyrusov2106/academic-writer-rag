@@ -14,7 +14,7 @@ from sentence_transformers import SentenceTransformer
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+import bcrypt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr
@@ -24,7 +24,6 @@ SECRET_KEY = os.getenv("SECRET_KEY", "").strip()
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7 # Токен живет 7 дней
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security = HTTPBearer()
 
 # --- МОДЕЛИ ДЛЯ АВТОРИЗАЦИИ ---
@@ -196,11 +195,16 @@ def search_openalex(query: str, limit: int = 5) -> list[dict]:
         return []
 
 # --- ФУНКЦИИ БЕЗОПАСНОСТИ ---
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+def verify_password(plain_password, hashed_password) -> bool:
+    password_byte_enc = plain_password.encode('utf-8')
+    hashed_byte_enc = hashed_password.encode('utf-8')
+    return bcrypt.checkpw(password_byte_enc, hashed_byte_enc)
 
-def get_password_hash(password):
-    return pwd_context.hash(password)
+def get_password_hash(password: str) -> str:
+    password_byte_enc = password.encode('utf-8')
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password_byte_enc, salt)
+    return hashed.decode('utf-8')
 
 def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode = data.copy()
@@ -253,7 +257,7 @@ def increment_user_requests(user_id: int):
         log.error(f"Ошибка обновления счетчика: {e}")
 
 def get_db_connection():
-    ssl_mode = 'require' if DB_HOST not in ['127.0.0.1', 'localhost'] else None
+    ssl_mode = 'require' if DB_HOST not in ['127.0.0.1', 'localhost', 'db'] else None
     return psycopg2.connect(
         host=DB_HOST, port=DB_PORT, dbname=DB_NAME,
         user=DB_USER, password=DB_PASSWORD,
