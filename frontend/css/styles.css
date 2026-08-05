@@ -879,3 +879,20 @@ body.dark-theme .voice-lang-btn.active {
 #logout-btn {
     display: none;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКА ИНТЕРФЕЙСА
+   ═══════════════════════════════════════════════════════════ */
+.lang-toggle-btn {
+background: none;
+border: none;
+font-size: 24px;
+cursor: pointer;
+padding: 5px;
+border-radius: 50%;
+transition: transform 0.2s;
+}
+.lang-toggle-btn:hover {
+transform: scale(1.2);
+background: rgba(255, 255, 255, 0.1);
+}
