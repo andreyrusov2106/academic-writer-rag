@@ -20,7 +20,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr
 
 # --- НАСТРОЙКИ БЕЗОПАСНОСТИ ---
-SECRET_KEY = "fjkdlsjfdslkcknxkclldserioi454896ukoekjsfkldslfmsdlk" # В продакшене хранить в .env!
+SECRET_KEY = os.getenv("SECRET_KEY", "").strip()
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7 # Токен живет 7 дней
 
