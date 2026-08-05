@@ -22,6 +22,7 @@
         <div class="top-bar">
             <h1>🎓 Академический редактор</h1>
             <div class="controls">
+                <button id="lang-toggle" class="lang-toggle-btn" title="Переключить язык">🇨🇳</button>
                 <select class="gost-select" id="gost-select" onchange="applyGost()">
                     <option value="gost-report">ГОСТ 7.32-2017 (Отчёт о НИР)</option>
                     <option value="gost-thesis">ГОСТ 7.1-2003 (Диссертация)</option>
@@ -37,8 +38,8 @@
 					<button class="voice-lang-btn" id="editor-lang-cn" onclick="setEditorVoiceLang('zh-CN')" title="中文">🇨🇳</button>
 				</div>
 				<button class="btn" onclick="toggleEditorVoice()" id="editor-voice-btn" title="Диктовать текст в редактор">🎤 Диктовать</button>
-                <button class="btn btn-primary" onclick="exportDocx()">📄 Экспорт DOCX</button>
-                <button class="btn btn-primary" onclick="exportPdf()">📕 Экспорт PDF</button>
+                <button class="btn btn-primary" id="export-docx-btn" onclick="exportDocx()">📄 Экспорт DOCX</button>
+                <button class="btn btn-primary" id="export-pdf-btn" onclick="exportPdf()">📕 Экспорт PDF</button>
             </div>
         </div>
         
@@ -56,12 +57,13 @@
             
             <!-- Боковая панель -->
             <div class="terms-section">
-                <h3>📚 Термины</h3>
-                <button class="add-term-btn" onclick="showAddTermModal()">+ Добавить термин</button>
+                <h3 id="terms-title">📚 Термины</h3>
+                <button class="add-term-btn" id="add-term-btn" onclick="showAddTermModal()">+ Добавить термин</button>
                 <div id="terms-list"></div>
                 
                 <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid var(--border-color);">
-                    <h3>📥 Загрузить PDF</h3>
+                    <h3 id="sources-title">📥 Загрузить PDF</h3>
+                    <button id="upload-pdf-btn" class="add-term-btn" onclick="document.getElementById('pdf-input').click()" style="margin-bottom: 10px;">Загрузить PDF</button>
                     <div id="upload-zone" style="border: 2px dashed #667eea; border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.3s; margin-top: 10px;" 
                          ondragover="handleDragOver(event)" 
                          ondragleave="handleDragLeave(event)" 
@@ -79,10 +81,10 @@
         <!-- Чат -->
         <div class="chat-section">
             <div class="chat-header">
-                <h3>🤖 Помощник — Профессор Копцева</h3>
+                <h3 id="smart-actions-title">🤖 Помощник — Профессор Копцева</h3>
                 <div class="chat-header-actions">
                     <span id="chat-status" style="color: var(--text-muted); font-size: 12px;">Подключение...</span>
-                    <button class="clear-chat-btn" onclick="clearChatHistory()">🗑️ Очистить</button>
+                    <button class="clear-chat-btn" id="clear-chat-btn" onclick="clearChatHistory()">🗑️ Очистить</button>
                 </div>
             </div>
             <div class="chat-messages" id="chat-messages">
@@ -95,7 +97,7 @@
 					<button class="voice-lang-btn" id="chat-lang-cn" onclick="setChatVoiceLang('zh-CN')" title="中文">🇨🇳</button>
 				</div>
 				<button class="voice-btn" id="chat-voice-btn" onclick="toggleChatVoice()" title="Голосовой ввод"></button>
-				<button class="chat-send" id="chat-send" onclick="sendChat()">Отправить</button>
+				<button class="chat-send" id="send-btn" onclick="sendChat()">Отправить</button>
 				<button class="chat-send" style="background: #4caf50;" onclick="openSearchModal()" title="Расширенный поиск в научных базах">🔍 Онлайн</button>
 			</div>
         </div>
@@ -197,6 +199,7 @@
     <script src="js/utils.js"></script>
     <script src="js/editor.js"></script>
     <script src="js/chat.js"></script>
+    <script src="js/i18n.js"></script>
     <script src="js/smart-editor.js"></script>
     <script src="js/search.js"></script>
 	<script src="js/voice.js"></script>
