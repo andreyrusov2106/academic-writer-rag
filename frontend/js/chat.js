@@ -263,13 +263,6 @@ function insertCitation(title, text) {
         quill.focus();
     }
 }
-function initChat() {
-    const savedChat = localStorage.getItem('academic_writer_chat_history');
-    if (savedChat) {
-        chatHistory = JSON.parse(savedChat);
-        chatHistory.forEach(msg => renderChatMessage(msg.role, msg.text));
-    }
-}
 // ═══════════════════════════════════════════════════════════
 // ИНДИКАТОР ЛИМИТОВ
 // ═══════════════════════════════════════════════════════════
