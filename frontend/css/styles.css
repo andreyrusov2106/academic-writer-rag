@@ -300,19 +300,18 @@ body {
 }
 
 .clear-chat-btn {
-    background: transparent;
-    border: 1px solid var(--danger);
-    color: var(--danger);
-    padding: 4px 10px;
-    border-radius: 12px;
-    font-size: 11px;
+    background-color: #ffffff;
+    border: 1px solid #ef4444;
+    color: #ef4444;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 12px;
     cursor: pointer;
     transition: all 0.2s;
 }
 
 .clear-chat-btn:hover {
-    background: var(--danger);
-    color: white;
+    background-color: #fef2f2;
 }
 
 .chat-messages {
@@ -908,11 +907,12 @@ background: rgba(255, 255, 255, 0.1);
 
 /* Левая панель: Редактор */
 .editor-panel {
-    flex: 2; /* 60-70% ширины */
+    flex: 3; /* ~67% ширины */
     display: flex;
     flex-direction: column;
     background-color: #ffffff;
     border-right: 1px solid #e5e7eb;
+    min-width: 0;
 }
 
 .editor-toolbar {
@@ -951,11 +951,11 @@ background: rgba(255, 255, 255, 0.1);
 
 /* Правая панель: Ассистент */
 .assistant-panel {
-    flex: 1; /* 30-40% ширины */
+    flex: 2; /* ~33% ширины */
     display: flex;
     flex-direction: column;
     background-color: #f8f9fa;
-    min-width: 320px;
+    min-width: 350px;
 }
 
 .assistant-header {
@@ -985,6 +985,13 @@ background: rgba(255, 255, 255, 0.1);
 }
 
 /* Чат внутри ассистента */
+.chat-container {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
 .chat-messages {
     flex: 1;
     overflow-y: auto;
@@ -1017,6 +1024,18 @@ background: rgba(255, 255, 255, 0.1);
     border-bottom-right-radius: 4px;
 }
 
+.chat-input-area {
+    padding: 16px 20px;
+    background-color: #ffffff;
+    border-top: 1px solid #e5e7eb;
+}
+
+.chat-input-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 .chat-input-container {
     padding: 16px 20px;
     background-color: #ffffff;
@@ -1027,13 +1046,16 @@ background: rgba(255, 255, 255, 0.1);
 }
 
 .chat-input {
-    width: 100%;
+    flex: 1;
+    min-width: 0;
     padding: 10px 14px;
     border: 1px solid #d1d5db;
     border-radius: 8px;
     font-size: 14px;
     outline: none;
     transition: border-color 0.2s;
+    background: var(--bg-container);
+    color: var(--text-main);
 }
 
 .chat-input:focus {
@@ -1042,6 +1064,7 @@ background: rgba(255, 255, 255, 0.1);
 
 .chat-input-row {
     display: flex;
+    align-items: center;
     gap: 8px;
 }
 
@@ -1054,6 +1077,7 @@ background: rgba(255, 255, 255, 0.1);
     cursor: pointer;
     font-weight: 500;
     transition: background-color 0.2s;
+    flex-shrink: 0;
 }
 
 .chat-send:hover {
@@ -1073,7 +1097,21 @@ background: rgba(255, 255, 255, 0.1);
     background-color: #e5e7eb;
 }
 
+.search-btn {
+    padding: 10px 14px;
+    font-size: 13px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
 /* Аккордеон для терминов и источников */
+.assistant-sections {
+    padding: 16px 20px;
+    overflow-y: auto;
+    flex: 1;
+    background-color: #f8f9fa;
+}
+
 .editor-sections {
     padding: 20px;
     background-color: #f8f9fa;
