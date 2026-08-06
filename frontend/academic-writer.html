@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#2c3e50">
+    <meta name="theme-color" content="#2563eb">
     <meta name="description" content="Интеллектуальный помощник для исследователей">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/icons/icon_192x192.png">
@@ -12,46 +12,51 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="AcademicWriter">
-    <title>Академический редактор — Профессор Копцева</title>
+    <title>Academic Writer — Профессор Копцева</title>
     
-    <!-- Quill.js -->
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
     
-    <!-- Экспорт -->
     <script src="https://unpkg.com/html-docx-js/dist/html-docx.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
-    <!-- Наши стили -->
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <div class="container">
-        <!-- Верхняя панель -->
-        <div class="top-bar">
-            <h1>🎓 Академический редактор</h1>
-            <div class="controls">
-                <button id="lang-toggle" class="lang-toggle-btn" title="Переключить язык">🇨🇳</button>
-                <select class="gost-select" id="gost-select" onchange="applyGost()">
-                    <option value="gost-report">ГОСТ 7.32-2017 (Отчёт о НИР)</option>
-                    <option value="gost-thesis">ГОСТ 7.1-2003 (Диссертация)</option>
-                    <option value="gost-article">Статья для журнала ВАК</option>
-                    <option value="gost-ord">ГОСТ Р 7.0.97-2016 (ОРД)</option>
-                    <option value="free">Свободное форматирование</option>
-                </select>
-                <button class="btn" onclick="generateTOC()" id="toc-btn"> Оглавление</button>
-                <button class="btn" onclick="generateBibliography()" id="bibliography-btn"> Список литературы</button>
-                <button class="btn" onclick="toggleTheme()" id="theme-toggle-btn">🌙 Темная тема</button>
-				<button class="btn" onclick="toggleEditorVoice()" id="editor-voice-btn" title="Диктовать текст в редактор">🎤 Диктовать</button>
-                <button class="btn btn-primary" id="export-docx-btn" onclick="exportDocx()">📄 Экспорт DOCX</button>
-                <button class="btn btn-primary" id="export-pdf-btn" onclick="exportPdf()">📕 Экспорт PDF</button>
-            </div>
+    <header class="app-header">
+        <div class="header-left">
+            <h1 class="app-title">🎓 Academic Writer</h1>
         </div>
-        
-        <!-- Основной контент -->
-        <div class="main-content">
-            <!-- Редактор -->
-            <div class="editor-section">
+        <div class="header-right">
+            <button id="lang-toggle" class="lang-toggle-btn" title="Переключить язык">🇨🇳</button>
+        </div>
+    </header>
+
+    <div class="app-layout">
+        <main class="editor-panel">
+            <div class="editor-toolbar">
+                <div class="toolbar-group">
+                    <select class="gost-select" id="gost-select" onchange="applyGost()">
+                        <option value="gost-report">ГОСТ 7.32-2017 (Отчёт о НИР)</option>
+                        <option value="gost-thesis">ГОСТ 7.1-2003 (Диссертация)</option>
+                        <option value="gost-article">Статья для журнала ВАК</option>
+                        <option value="gost-ord">ГОСТ Р 7.0.97-2016 (ОРД)</option>
+                        <option value="free">Свободное форматирование</option>
+                    </select>
+                </div>
+                <div class="toolbar-group">
+                    <button class="btn btn-secondary" onclick="generateTOC()" id="toc-btn">📑 Оглавление</button>
+                    <button class="btn btn-secondary" onclick="generateBibliography()" id="bibliography-btn">📚 Литература</button>
+                    <button class="btn btn-secondary" onclick="toggleTheme()" id="theme-toggle-btn">🌙 Тема</button>
+                    <button class="btn btn-secondary" onclick="toggleEditorVoice()" id="editor-voice-btn" title="Диктовать текст в редактор">🎤 Диктовать</button>
+                </div>
+                <div class="toolbar-group">
+                    <button class="btn btn-primary" id="export-docx-btn" onclick="exportDocx()">📄 DOCX</button>
+                    <button class="btn btn-primary" id="export-pdf-btn" onclick="exportPdf()">📕 PDF</button>
+                </div>
+            </div>
+
+            <div class="editor-wrapper">
                 <div class="editor-container gost-report" id="editor-container">
                     <div id="editor">
                         <h2>Заголовок документа</h2>
@@ -59,49 +64,63 @@
                     </div>
                 </div>
             </div>
-            
-            <!-- Боковая панель -->
-            <div class="terms-section">
-                <h3 id="terms-title">📚 Термины</h3>
-                <button class="add-term-btn" id="add-term-btn" onclick="showAddTermModal()">+ Добавить термин</button>
-                <div id="terms-list"></div>
-                
-                <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid var(--border-color);">
-                    <h3 id="sources-title">📥 Загрузить PDF</h3>
-                    <button id="upload-pdf-btn" class="add-term-btn" onclick="document.getElementById('pdf-input').click()" style="margin-bottom: 10px;">Загрузить PDF</button>
-                    <div id="upload-zone" style="border: 2px dashed #667eea; border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.3s; margin-top: 10px;" 
-                         ondragover="handleDragOver(event)" 
-                         ondragleave="handleDragLeave(event)" 
-                         ondrop="handleDrop(event)"
-                         onclick="document.getElementById('pdf-input').click()">
-                        <div style="font-size: 40px; margin-bottom: 10px;">📄</div>
-                        <div id="drag-drop-text" style="font-size: 14px; color: var(--text-muted);">Перетащите PDF сюда<br>или нажмите для выбора</div>
+
+            <div class="editor-sections">
+                <details class="accordion-section" open>
+                    <summary class="accordion-header">
+                        <span>📚 Термины</span>
+                        <button class="add-term-btn-small" id="add-term-btn" onclick="showAddTermModal()">+ Добавить</button>
+                    </summary>
+                    <div class="accordion-content" id="terms-list"></div>
+                </details>
+
+                <details class="accordion-section" open>
+                    <summary class="accordion-header">📥 Загрузить PDF</summary>
+                    <div class="accordion-content">
+                        <button id="upload-pdf-btn" class="btn btn-secondary" onclick="document.getElementById('pdf-input').click()" style="margin-bottom: 10px;">Выбрать файл</button>
+                        <div id="upload-zone" style="border: 2px dashed #2563eb; border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.3s; margin-top: 10px;" 
+                             ondragover="handleDragOver(event)" 
+                             ondragleave="handleDragLeave(event)" 
+                             ondrop="handleDrop(event)"
+                             onclick="document.getElementById('pdf-input').click()">
+                            <div style="font-size: 40px; margin-bottom: 10px;">📄</div>
+                            <div id="drag-drop-text" style="font-size: 14px; color: #6b7280;">Перетащите PDF сюда<br>или нажмите для выбора</div>
+                        </div>
+                        <input type="file" id="pdf-input" accept=".pdf" style="display: none;" onchange="handleFileSelect(event)">
+                        <div id="upload-status" style="margin-top: 10px; font-size: 12px; color: #6b7280;"></div>
                     </div>
-                    <input type="file" id="pdf-input" accept=".pdf" style="display: none;" onchange="handleFileSelect(event)">
-                    <div id="upload-status" style="margin-top: 10px; font-size: 12px; color: var(--text-muted);"></div>
-                </div>
+                </details>
             </div>
-        </div>
-        
-        <!-- Чат -->
-        <div class="chat-section">
-            <div class="chat-header">
-                <h3 id="smart-actions-title">🤖 Помощник — Профессор Копцева</h3>
-                <div class="chat-header-actions">
-                    <span id="chat-status" style="color: var(--text-muted); font-size: 12px;">Подключение...</span>
+        </main>
+
+        <aside class="assistant-panel">
+            <div class="assistant-header">
+                <h2 class="assistant-title">Ассистент</h2>
+                <div class="assistant-meta">
+                    <span id="chat-status" class="db-status">✓ База: <span id="chunk-count">0</span> чанков</span>
                     <button class="clear-chat-btn" id="clear-chat-btn" onclick="clearChatHistory()">🗑️ Очистить</button>
                 </div>
             </div>
-            <div class="chat-messages" id="chat-messages">
-                <div class="chat-message bot">Здравствуйте! Я — Наталья Петровна Копцева. Чем могу помочь с вашей работой?</div>
+
+            <div class="chat-container">
+                <div class="chat-messages" id="chat-messages">
+                    <div class="chat-message bot">Здравствуйте! Я — Наталья Петровна Копцева. Чем могу помочь с вашей работой?</div>
+                </div>
             </div>
-            <div class="chat-input-container">
-				<input type="text" class="chat-input" id="chat-input" placeholder="Задайте вопрос или нажмите 🎤 для диктовки..." onkeypress="if(event.key === 'Enter') sendChat()">
-				<button class="voice-btn" id="chat-voice-btn" onclick="toggleChatVoice()" title="Голосовой ввод"></button>
-				<button class="chat-send" id="send-btn" onclick="sendChat()">Отправить</button>
-				<button class="chat-send" style="background: #4caf50;" onclick="openSearchModal()" title="Расширенный поиск в научных базах">🔍 Онлайн</button>
-			</div>
-        </div>
+
+            <div class="chat-input-area">
+                <div class="chat-input-container">
+                    <input type="text" class="chat-input" id="chat-input" placeholder="Задайте вопрос..." onkeypress="if(event.key === 'Enter') sendChat()">
+                    <button class="voice-btn" id="chat-voice-btn" onclick="toggleChatVoice()" title="Голосовой ввод">🎤</button>
+                    <button class="chat-send" id="send-btn" onclick="sendChat()">➤</button>
+                </div>
+                <button class="btn btn-secondary search-btn" onclick="openSearchModal()" title="Расширенный поиск в научных базах">🔍 Онлайн поиск</button>
+            </div>
+
+            <div class="assistant-footer">
+                <div id="usage-indicator" class="usage-counter">0 / 10 запросов (FREE)</div>
+            </div>
+        </aside>
     </div>
     
     <!-- Модальное окно термина -->
@@ -162,24 +181,24 @@
     </div>
 
     <!-- Плавающее меню умных действий -->
-	<div class="smart-menu" id="smart-menu">
-		<div class="smart-menu-item" onmousedown="event.preventDefault(); executeSmartAction('rewrite_scientific')">
-			<span class="icon">🎓</span>
-			<span>Сделать более научным</span>
-		</div>
-		<div class="smart-menu-item" onmousedown="event.preventDefault(); executeSmartAction('translate_cn')">
-			<span class="icon">🇨🇳</span>
-			<span>Перевести на китайский</span>
-		</div>
-		<div class="smart-menu-item" onmousedown="event.preventDefault(); executeSmartAction('find_sources')">
-			<span class="icon">🔍</span>
-			<span>Найти источники</span>
-		</div>
-		<div class="smart-menu-item" onmousedown="event.preventDefault(); executeSmartAction('fix_style')">
-			<span class="icon">✏️</span>
-			<span>Исправить стиль и ошибки</span>
-		</div>
-	</div>
+    <div class="smart-menu" id="smart-menu">
+        <div class="smart-menu-item" onmousedown="event.preventDefault(); executeSmartAction('rewrite_scientific')">
+            <span class="icon">🎓</span>
+            <span>Сделать более научным</span>
+        </div>
+        <div class="smart-menu-item" onmousedown="event.preventDefault(); executeSmartAction('translate_cn')">
+            <span class="icon">🇨🇳</span>
+            <span>Перевести на китайский</span>
+        </div>
+        <div class="smart-menu-item" onmousedown="event.preventDefault(); executeSmartAction('find_sources')">
+            <span class="icon">🔍</span>
+            <span>Найти источники</span>
+        </div>
+        <div class="smart-menu-item" onmousedown="event.preventDefault(); executeSmartAction('fix_style')">
+            <span class="icon">✏️</span>
+            <span>Исправить стиль и ошибки</span>
+        </div>
+    </div>
 
     <!-- Индикатор обработки -->
     <div class="smart-processing" id="smart-processing">
@@ -203,65 +222,67 @@
     <script src="js/i18n.js"></script>
     <script src="js/smart-editor.js"></script>
     <script src="js/search.js"></script>
-	<script src="js/voice.js"></script>
+    <script src="js/voice.js"></script>
     <script src="js/app.js"></script>
-	<!-- Индикатор голосового ввода -->
-	<div class="voice-status" id="voice-status">
-    <div class="recording-indicator"></div>
-    <span id="voice-status-text">Слушаю...</span>
-</div>
-<!-- Модальное окно авторизации -->
-<div id="auth-modal" class="auth-modal-overlay">
-    <div class="auth-modal">
-        <div class="auth-modal-header">
-            <h2>🎓 Помощник исследователя</h2>
-            <p class="auth-subtitle">Войдите, чтобы продолжить работу с профессором Копцевой</p>
-        </div>
-        <div class="auth-tabs">
-            <button class="auth-tab active" data-tab="login">Вход</button>
-            <button class="auth-tab" data-tab="register">Регистрация</button>
-        </div>
-        <form id="login-form" class="auth-form">
-            <div class="form-group">
-                <label for="login-email">Email</label>
-                <input type="email" id="login-email" placeholder="your@email.com" required>
-            </div>
-            <div class="form-group">
-                <label for="login-password">Пароль</label>
-                <input type="password" id="login-password" placeholder="Введите пароль" required>
-            </div>
-            <button type="submit" class="auth-btn-primary">Войти</button>
-            <div id="login-error" class="auth-error"></div>
-        </form>
-        <form id="register-form" class="auth-form" style="display: none;">
-            <div class="form-group">
-                <label for="register-email">Email</label>
-                <input type="email" id="register-email" placeholder="your@email.com" required>
-            </div>
-            <div class="form-group">
-                <label for="register-password">Пароль (мин. 6 символов)</label>
-                <input type="password" id="register-password" placeholder="Минимум 6 символов" minlength="6" required>
-            </div>
-            <button type="submit" class="auth-btn-primary">Создать аккаунт</button>
-            <div id="register-error" class="auth-error"></div>
-        </form>
+    
+    <!-- Индикатор голосового ввода -->
+    <div class="voice-status" id="voice-status">
+        <div class="recording-indicator"></div>
+        <span id="voice-status-text">Слушаю...</span>
     </div>
-</div>
+    
+    <!-- Модальное окно авторизации -->
+    <div id="auth-modal" class="auth-modal-overlay">
+        <div class="auth-modal">
+            <div class="auth-modal-header">
+                <h2>🎓 Помощник исследователя</h2>
+                <p class="auth-subtitle">Войдите, чтобы продолжить работу с профессором Копцевой</p>
+            </div>
+            <div class="auth-tabs">
+                <button class="auth-tab active" data-tab="login">Вход</button>
+                <button class="auth-tab" data-tab="register">Регистрация</button>
+            </div>
+            <form id="login-form" class="auth-form">
+                <div class="form-group">
+                    <label for="login-email">Email</label>
+                    <input type="email" id="login-email" placeholder="your@email.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Пароль</label>
+                    <input type="password" id="login-password" placeholder="Введите пароль" required>
+                </div>
+                <button type="submit" class="auth-btn-primary">Войти</button>
+                <div id="login-error" class="auth-error"></div>
+            </form>
+            <form id="register-form" class="auth-form" style="display: none;">
+                <div class="form-group">
+                    <label for="register-email">Email</label>
+                    <input type="email" id="register-email" placeholder="your@email.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="register-password">Пароль (мин. 6 символов)</label>
+                    <input type="password" id="register-password" placeholder="Минимум 6 символов" minlength="6" required>
+                </div>
+                <button type="submit" class="auth-btn-primary">Создать аккаунт</button>
+                <div id="register-error" class="auth-error"></div>
+            </form>
+        </div>
+    </div>
 
-<!-- Floating Widget: Счетчик и выход -->
-<div id="user-widget" class="user-widget" style="display: none;">
-    <span id="usage-indicator">📊 0 / 10 (FREE)</span>
-    <button id="logout-btn" class="logout-btn-widget">Выйти</button>
-</div>
+    <!-- Floating Widget: Счетчик и выход -->
+    <div id="user-widget" class="user-widget" style="display: none;">
+        <span id="usage-indicator">📊 0 / 10 (FREE)</span>
+        <button id="logout-btn" class="logout-btn-widget">Выйти</button>
+    </div>
 
-<script>
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
-      .then(reg => console.log('SW registered: ', reg))
-      .catch(err => console.log('SW registration failed: ', err));
-  });
-}
-</script>
+    <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(reg => console.log('SW registered: ', reg))
+          .catch(err => console.log('SW registration failed: ', err));
+      });
+    }
+    </script>
 </body>
 </html>
