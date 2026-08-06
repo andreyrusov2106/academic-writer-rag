@@ -1,4 +1,1 @@
-```
-# Backup files
-*.backup
-```
+Nothing should be ignored in this case, as only a CSS source file was modified and no build artifacts, dependencies, or temporary files were detected.
