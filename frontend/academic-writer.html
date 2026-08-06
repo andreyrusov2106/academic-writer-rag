@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#2c3e50">
+    <meta name="theme-color" content="#2563eb">
     <meta name="description" content="Интеллектуальный помощник для исследователей">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/icons/icon_192x192.png">
@@ -26,12 +26,22 @@
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <div class="container">
-        <!-- Верхняя панель -->
-        <div class="top-bar">
-            <h1>🎓 Академический редактор</h1>
-            <div class="controls">
-                <button id="lang-toggle" class="lang-toggle-btn" title="Переключить язык">🇨🇳</button>
+    <!-- Верхняя панель (Header) -->
+    <header class="app-header">
+        <div class="header-left">
+            <h1 class="app-logo">🎓 Academic Writer</h1>
+        </div>
+        <div class="header-right">
+            <button id="lang-toggle" class="lang-toggle-btn" title="Переключить язык">🇨🇳</button>
+        </div>
+    </header>
+
+    <!-- Основной контейнер с двумя панелями -->
+    <div class="app-container">
+        <!-- Левая панель - Редактор документа -->
+        <main class="editor-panel">
+            <!-- Toolbar с кнопками экспорта и ГОСТ -->
+            <div class="editor-toolbar">
                 <select class="gost-select" id="gost-select" onchange="applyGost()">
                     <option value="gost-report">ГОСТ 7.32-2017 (Отчёт о НИР)</option>
                     <option value="gost-thesis">ГОСТ 7.1-2003 (Диссертация)</option>
@@ -39,19 +49,18 @@
                     <option value="gost-ord">ГОСТ Р 7.0.97-2016 (ОРД)</option>
                     <option value="free">Свободное форматирование</option>
                 </select>
-                <button class="btn" onclick="generateTOC()" id="toc-btn"> Оглавление</button>
-                <button class="btn" onclick="generateBibliography()" id="bibliography-btn"> Список литературы</button>
-                <button class="btn" onclick="toggleTheme()" id="theme-toggle-btn">🌙 Темная тема</button>
-				<button class="btn" onclick="toggleEditorVoice()" id="editor-voice-btn" title="Диктовать текст в редактор">🎤 Диктовать</button>
-                <button class="btn btn-primary" id="export-docx-btn" onclick="exportDocx()">📄 Экспорт DOCX</button>
-                <button class="btn btn-primary" id="export-pdf-btn" onclick="exportPdf()">📕 Экспорт PDF</button>
+                <div class="toolbar-buttons">
+                    <button class="btn btn-secondary" onclick="generateTOC()" id="toc-btn">📑 Оглавление</button>
+                    <button class="btn btn-secondary" onclick="generateBibliography()" id="bibliography-btn">📚 Литература</button>
+                    <button class="btn btn-secondary" onclick="toggleTheme()" id="theme-toggle-btn">🌙 Тема</button>
+                    <button class="btn btn-secondary" onclick="toggleEditorVoice()" id="editor-voice-btn" title="Диктовать текст в редактор">🎤 Диктовать</button>
+                    <button class="btn btn-primary" id="export-docx-btn" onclick="exportDocx()">📄 DOCX</button>
+                    <button class="btn btn-primary" id="export-pdf-btn" onclick="exportPdf()">📕 PDF</button>
+                </div>
             </div>
-        </div>
-        
-        <!-- Основной контент -->
-        <div class="main-content">
-            <!-- Редактор -->
-            <div class="editor-section">
+
+            <!-- Область редактора -->
+            <div class="editor-wrapper">
                 <div class="editor-container gost-report" id="editor-container">
                     <div id="editor">
                         <h2>Заголовок документа</h2>
@@ -59,49 +68,70 @@
                     </div>
                 </div>
             </div>
-            
-            <!-- Боковая панель -->
-            <div class="terms-section">
-                <h3 id="terms-title">📚 Термины</h3>
-                <button class="add-term-btn" id="add-term-btn" onclick="showAddTermModal()">+ Добавить термин</button>
-                <div id="terms-list"></div>
-                
-                <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid var(--border-color);">
-                    <h3 id="sources-title">📥 Загрузить PDF</h3>
-                    <button id="upload-pdf-btn" class="add-term-btn" onclick="document.getElementById('pdf-input').click()" style="margin-bottom: 10px;">Загрузить PDF</button>
-                    <div id="upload-zone" style="border: 2px dashed #667eea; border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.3s; margin-top: 10px;" 
-                         ondragover="handleDragOver(event)" 
-                         ondragleave="handleDragLeave(event)" 
-                         ondrop="handleDrop(event)"
-                         onclick="document.getElementById('pdf-input').click()">
-                        <div style="font-size: 40px; margin-bottom: 10px;">📄</div>
-                        <div id="drag-drop-text" style="font-size: 14px; color: var(--text-muted);">Перетащите PDF сюда<br>или нажмите для выбора</div>
+
+            <!-- Секции под редактором (сворачиваемые) -->
+            <div class="editor-sections">
+                <!-- Термины -->
+                <details class="accordion-section" open>
+                    <summary class="accordion-header">
+                        <span>📚 Термины</span>
+                        <button class="add-term-btn-small" id="add-term-btn" onclick="showAddTermModal()">+ Добавить</button>
+                    </summary>
+                    <div class="accordion-content">
+                        <div id="terms-list"></div>
                     </div>
-                    <input type="file" id="pdf-input" accept=".pdf" style="display: none;" onchange="handleFileSelect(event)">
-                    <div id="upload-status" style="margin-top: 10px; font-size: 12px; color: var(--text-muted);"></div>
+                </details>
+
+                <!-- Источники / Загрузка PDF -->
+                <details class="accordion-section" open>
+                    <summary class="accordion-header">
+                        <span>📥 Источники</span>
+                    </summary>
+                    <div class="accordion-content">
+                        <button id="upload-pdf-btn" class="btn btn-secondary" onclick="document.getElementById('pdf-input').click()" style="margin-bottom: 10px;">Загрузить PDF</button>
+                        <div id="upload-zone" class="upload-zone"
+                             ondragover="handleDragOver(event)" 
+                             ondragleave="handleDragLeave(event)" 
+                             ondrop="handleDrop(event)"
+                             onclick="document.getElementById('pdf-input').click()">
+                            <div class="upload-icon">📄</div>
+                            <div id="drag-drop-text">Перетащите PDF сюда<br>или нажмите для выбора</div>
+                        </div>
+                        <input type="file" id="pdf-input" accept=".pdf" style="display: none;" onchange="handleFileSelect(event)">
+                        <div id="upload-status"></div>
+                    </div>
+                </details>
+            </div>
+        </main>
+
+        <!-- Правая панель - AI Ассистент -->
+        <aside class="assistant-panel">
+            <div class="assistant-header">
+                <h2 class="assistant-title">🤖 Ассистент</h2>
+                <div class="assistant-meta">
+                    <span id="chat-status" class="db-status">✓ База: <span id="chunk-count">0</span> чанков</span>
+                    <button class="clear-chat-btn" id="clear-chat-btn" onclick="clearChatHistory()">🗑️</button>
                 </div>
             </div>
-        </div>
-        
-        <!-- Чат -->
-        <div class="chat-section">
-            <div class="chat-header">
-                <h3 id="smart-actions-title">🤖 Помощник — Профессор Копцева</h3>
-                <div class="chat-header-actions">
-                    <span id="chat-status" style="color: var(--text-muted); font-size: 12px;">Подключение...</span>
-                    <button class="clear-chat-btn" id="clear-chat-btn" onclick="clearChatHistory()">🗑️ Очистить</button>
-                </div>
-            </div>
+
+            <!-- Область чата -->
             <div class="chat-messages" id="chat-messages">
                 <div class="chat-message bot">Здравствуйте! Я — Наталья Петровна Копцева. Чем могу помочь с вашей работой?</div>
             </div>
+
+            <!-- Ввод вопроса -->
             <div class="chat-input-container">
-				<input type="text" class="chat-input" id="chat-input" placeholder="Задайте вопрос или нажмите 🎤 для диктовки..." onkeypress="if(event.key === 'Enter') sendChat()">
-				<button class="voice-btn" id="chat-voice-btn" onclick="toggleChatVoice()" title="Голосовой ввод"></button>
-				<button class="chat-send" id="send-btn" onclick="sendChat()">Отправить</button>
-				<button class="chat-send" style="background: #4caf50;" onclick="openSearchModal()" title="Расширенный поиск в научных базах">🔍 Онлайн</button>
-			</div>
-        </div>
+                <input type="text" class="chat-input" id="chat-input" placeholder="Задайте вопрос или нажмите 🎤..." onkeypress="if(event.key === 'Enter') sendChat()">
+                <button class="voice-btn-small" id="chat-voice-btn" onclick="toggleChatVoice()" title="Голосовой ввод">🎤</button>
+                <button class="chat-send" id="send-btn" onclick="sendChat()">➤</button>
+                <button class="chat-send search-btn" onclick="openSearchModal()" title="Расширенный поиск">🔍</button>
+            </div>
+
+            <!-- Счетчик запросов -->
+            <div class="request-counter">
+                <span id="usage-indicator">0 / 10 запросов (FREE)</span>
+            </div>
+        </aside>
     </div>
     
     <!-- Модальное окно термина -->
@@ -111,7 +141,7 @@
             <input type="text" id="term-input" placeholder="Введите термин...">
             <textarea id="term-definition-input" placeholder="Определение (необязательно)..." style="width: 100%; padding: 10px; border: 2px solid var(--border-color); border-radius: 8px; margin-bottom: 15px; font-size: 14px; min-height: 80px; background: var(--bg-container); color: var(--text-main);"></textarea>
             <div class="modal-buttons">
-                <button class="btn" onclick="closeModal()">Отмена</button>
+                <button class="btn btn-secondary" onclick="closeModal()">Отмена</button>
                 <button class="btn btn-primary" onclick="addTerm()">Добавить</button>
             </div>
         </div>
@@ -155,31 +185,31 @@
                 </label>
             </div>
             <div class="modal-buttons">
-                <button class="btn" onclick="closeSearchModal()">Отмена</button>
+                <button class="btn btn-secondary" onclick="closeSearchModal()">Отмена</button>
                 <button class="btn btn-primary" onclick="executeSearch()">🔍 Искать</button>
             </div>
         </div>
     </div>
 
     <!-- Плавающее меню умных действий -->
-	<div class="smart-menu" id="smart-menu">
-		<div class="smart-menu-item" onmousedown="event.preventDefault(); executeSmartAction('rewrite_scientific')">
-			<span class="icon">🎓</span>
-			<span>Сделать более научным</span>
-		</div>
-		<div class="smart-menu-item" onmousedown="event.preventDefault(); executeSmartAction('translate_cn')">
-			<span class="icon">🇨🇳</span>
-			<span>Перевести на китайский</span>
-		</div>
-		<div class="smart-menu-item" onmousedown="event.preventDefault(); executeSmartAction('find_sources')">
-			<span class="icon">🔍</span>
-			<span>Найти источники</span>
-		</div>
-		<div class="smart-menu-item" onmousedown="event.preventDefault(); executeSmartAction('fix_style')">
-			<span class="icon">✏️</span>
-			<span>Исправить стиль и ошибки</span>
-		</div>
-	</div>
+<div class="smart-menu" id="smart-menu">
+<div class="smart-menu-item" onmousedown="event.preventDefault(); executeSmartAction('rewrite_scientific')">
+<span class="icon">🎓</span>
+<span>Сделать более научным</span>
+</div>
+<div class="smart-menu-item" onmousedown="event.preventDefault(); executeSmartAction('translate_cn')">
+<span class="icon">🇨🇳</span>
+<span>Перевести на китайский</span>
+</div>
+<div class="smart-menu-item" onmousedown="event.preventDefault(); executeSmartAction('find_sources')">
+<span class="icon">🔍</span>
+<span>Найти источники</span>
+</div>
+<div class="smart-menu-item" onmousedown="event.preventDefault(); executeSmartAction('fix_style')">
+<span class="icon">✏️</span>
+<span>Исправить стиль и ошибки</span>
+</div>
+</div>
 
     <!-- Индикатор обработки -->
     <div class="smart-processing" id="smart-processing">
@@ -192,7 +222,7 @@
         <h3 style="margin-bottom: 15px;">📚 Найденные источники</h3>
         <div id="smart-sources-content"></div>
         <div style="text-align: right; margin-top: 15px;">
-            <button class="btn" onclick="closeSourcesPopup()">Закрыть</button>
+            <button class="btn btn-secondary" onclick="closeSourcesPopup()">Закрыть</button>
         </div>
     </div>
 
@@ -203,10 +233,10 @@
     <script src="js/i18n.js"></script>
     <script src="js/smart-editor.js"></script>
     <script src="js/search.js"></script>
-	<script src="js/voice.js"></script>
+<script src="js/voice.js"></script>
     <script src="js/app.js"></script>
-	<!-- Индикатор голосового ввода -->
-	<div class="voice-status" id="voice-status">
+<!-- Индикатор голосового ввода -->
+<div class="voice-status" id="voice-status">
     <div class="recording-indicator"></div>
     <span id="voice-status-text">Слушаю...</span>
 </div>
@@ -250,7 +280,7 @@
 
 <!-- Floating Widget: Счетчик и выход -->
 <div id="user-widget" class="user-widget" style="display: none;">
-    <span id="usage-indicator">📊 0 / 10 (FREE)</span>
+    <span id="usage-indicator-widget">📊 0 / 10 (FREE)</span>
     <button id="logout-btn" class="logout-btn-widget">Выйти</button>
 </div>
 
