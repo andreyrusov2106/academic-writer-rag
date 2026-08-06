@@ -64,8 +64,25 @@
                     </div>
                 </div>
             </div>
+        </main>
 
-            <div class="editor-sections">
+        <aside class="assistant-panel">
+            <div class="assistant-header">
+                <h2 class="assistant-title">Ассистент</h2>
+                <div class="assistant-meta">
+                    <span id="chat-status" class="db-status">✓ База: <span id="chunk-count">0</span> чанков</span>
+                    <button class="clear-chat-btn" id="clear-chat-btn" onclick="clearChatHistory()">🗑️ Очистить</button>
+                </div>
+            </div>
+
+            <div class="chat-container">
+                <div class="chat-messages" id="chat-messages">
+                    <div class="chat-message bot">Здравствуйте! Я — Наталья Петровна Копцева. Чем могу помочь с вашей работой?</div>
+                </div>
+            </div>
+
+            <!-- Секции терминов и загрузки PDF перемещены в панель ассистента -->
+            <div class="assistant-sections" style="padding: 16px 20px; overflow-y: auto; flex: 1;">
                 <details class="accordion-section" open>
                     <summary class="accordion-header">
                         <span>📚 Термины</span>
@@ -91,34 +108,14 @@
                     </div>
                 </details>
             </div>
-        </main>
-
-        <aside class="assistant-panel">
-            <div class="assistant-header">
-                <h2 class="assistant-title">Ассистент</h2>
-                <div class="assistant-meta">
-                    <span id="chat-status" class="db-status">✓ База: <span id="chunk-count">0</span> чанков</span>
-                    <button class="clear-chat-btn" id="clear-chat-btn" onclick="clearChatHistory()">🗑️ Очистить</button>
-                </div>
-            </div>
-
-            <div class="chat-container">
-                <div class="chat-messages" id="chat-messages">
-                    <div class="chat-message bot">Здравствуйте! Я — Наталья Петровна Копцева. Чем могу помочь с вашей работой?</div>
-                </div>
-            </div>
 
             <div class="chat-input-area">
-                <div class="chat-input-container">
+                <div class="chat-input-row">
                     <input type="text" class="chat-input" id="chat-input" placeholder="Задайте вопрос..." onkeypress="if(event.key === 'Enter') sendChat()">
                     <button class="voice-btn" id="chat-voice-btn" onclick="toggleChatVoice()" title="Голосовой ввод">🎤</button>
                     <button class="chat-send" id="send-btn" onclick="sendChat()">➤</button>
+                    <button class="btn btn-secondary search-btn" onclick="openSearchModal()" title="Расширенный поиск в научных базах">🔍 Онлайн поиск</button>
                 </div>
-                <button class="btn btn-secondary search-btn" onclick="openSearchModal()" title="Расширенный поиск в научных базах">🔍 Онлайн поиск</button>
-            </div>
-
-            <div class="assistant-footer">
-                <div id="usage-indicator" class="usage-counter">0 / 10 запросов (FREE)</div>
             </div>
         </aside>
     </div>
