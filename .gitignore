@@ -1,36 +1,29 @@
-# Examples:
-#   frontend/dist/
-#   frontend/node_modules/
-#   frontend/.env
-#   frontend/.vscode/
-#   frontend/*.log
-#   frontend/*.tmp
-#   frontend/__pycache__/
-#   frontend/.pytest_cache/
-#   frontend/coverage/
-#   frontend/htmlcov/
-#   frontend/.coverage
-#   frontend/.DS_Store
-#   frontend/Thumbs.db
-#   frontend/*.zip
-#   frontend/*.gz
-#   frontend/*.tar
-#   frontend/*.tgz
-#   frontend/*.bz2
-#   frontend/*.xz
-#   frontend/*.7z
-#   frontend/*.rar
-#   frontend/*.zst
-#   frontend/*.lz4
-#   frontend/*.lzh
-#   frontend/*.cab
-#   frontend/*.arj
-#   frontend/*.rpm
-#   frontend/*.deb
-#   frontend/*.Z
-#   frontend/*.lz
-#   frontend/*.lzo
-#   frontend/*.tar.gz
-#   frontend/*.tar.bz2
-#   frontend/*.tar.xz
-#   frontend/*.tar.zst
+```gitignore
+# Dependencies
+node_modules/
+
+# Build artifacts
+dist/
+build/
+*.min.js
+*.min.css
+*.bundle.js
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# Editors
+.vscode/
+.idea/
+
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+
+# OS generated files
+.DS_Store
+Thumbs.db
+```
