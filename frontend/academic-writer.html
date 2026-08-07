@@ -47,14 +47,25 @@
             <span class="icon">📋</span>
         </button>
         <div class="dropdown-menu" id="gost-dropdown">
-            <button class="dropdown-item" onclick="applyGostFormat('gost-report')">ГОСТ 7.32-2017</button>
-            <button class="dropdown-item" onclick="applyGostFormat('gost-thesis')">ГОСТ 7.1-2003</button>
-            <button class="dropdown-item" onclick="applyGostFormat('gost-article')">Статья ВАК</button>
-            <button class="dropdown-item" onclick="applyGostFormat('gost-ord')">ГОСТ Р 7.0.97-2016</button>
-            <button class="dropdown-item" onclick="applyGostFormat('free')">Свободное</button>
+            <button class="dropdown-item gost-option" data-format="gost-report" onclick="applyGostFormat('gost-report')">
+                <span class="checkmark">✓</span> ГОСТ 7.32-2017 (Отчёт)
+            </button>
+            <button class="dropdown-item gost-option" data-format="gost-thesis" onclick="applyGostFormat('gost-thesis')">
+                <span class="checkmark">✓</span> ГОСТ 7.1-2003 (Диссертация)
+            </button>
+            <button class="dropdown-item gost-option" data-format="gost-article" onclick="applyGostFormat('gost-article')">
+                <span class="checkmark">✓</span> Статья ВАК
+            </button>
+            <button class="dropdown-item gost-option" data-format="gost-ord" onclick="applyGostFormat('gost-ord')">
+                <span class="checkmark">✓</span> ГОСТ Р 7.0.97-2016 (ОРД)
+            </button>
+            <button class="dropdown-item gost-option" data-format="gost-free" onclick="applyGostFormat('gost-free')">
+                <span class="checkmark">✓</span> Свободное форматирование
+            </button>
         </div>
     </div>
 </div>
+<input type="hidden" id="gost-select" value="gost-report">
 <div class="toolbar-divider"></div>
 
 <!-- Группа: Действия -->

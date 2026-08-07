@@ -420,6 +420,73 @@ body {
 /* ═══════════════════════════════════════════════════════════
    ФОРМАТИРОВАНИЕ ГОСТ
    ═══════════════════════════════════════════════════════════ */
+/* Базовые стили редактора */
+#editor {
+    transition: all 0.3s ease;
+}
+
+/* ГОСТ 7.32-2017 (Отчет о НИР) */
+#editor.gost-report, .editor-container.gost-report #editor {
+    font-family: 'Times New Roman', Times, serif !important;
+    font-size: 14pt !important;
+    line-height: 1.5 !important;
+    text-align: justify !important;
+    text-indent: 1.25cm !important;
+}
+
+/* ГОСТ 7.1-2003 (Диссертация) */
+#editor.gost-thesis, .editor-container.gost-thesis #editor {
+    font-family: 'Times New Roman', Times, serif !important;
+    font-size: 14pt !important;
+    line-height: 1.5 !important;
+    text-align: justify !important;
+    text-indent: 1.25cm !important;
+}
+
+/* Статья ВАК */
+#editor.gost-article, .editor-container.gost-article #editor {
+    font-family: 'Times New Roman', Times, serif !important;
+    font-size: 12pt !important;
+    line-height: 1.5 !important;
+    text-align: justify !important;
+    text-indent: 1.25cm !important;
+}
+
+/* ГОСТ Р 7.0.97-2016 (ОРД) */
+#editor.gost-ord, .editor-container.gost-ord #editor {
+    font-family: 'Arial', sans-serif !important;
+    font-size: 12pt !important;
+    line-height: 1.15 !important;
+    text-align: left !important;
+    text-indent: 1.25cm !important;
+}
+
+/* Свободное форматирование */
+#editor.gost-free, .editor-container.gost-free #editor {
+    font-family: system-ui, -apple-system, sans-serif !important;
+    font-size: 16px !important;
+    line-height: 1.6 !important;
+    text-align: left !important;
+    text-indent: 0 !important;
+}
+
+/* Стили для галочки в выпадающем меню */
+.dropdown-item .checkmark {
+    visibility: hidden;
+    color: #2563eb;
+    font-weight: bold;
+    width: 16px;
+    display: inline-block;
+}
+
+.dropdown-item.active .checkmark {
+    visibility: visible;
+}
+
+body.dark-theme .dropdown-item.active .checkmark {
+    color: #60a5fa;
+}
+
 .gost-report {
     font-family: 'Times New Roman', serif;
     font-size: 14pt;
@@ -465,6 +532,18 @@ body {
 
 .gost-ord p {
     text-indent: 1.25cm;
+    margin-bottom: 0;
+}
+
+.gost-free {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    text-align: left;
+}
+
+.gost-free p {
+    text-indent: 0;
     margin-bottom: 0;
 }
 
