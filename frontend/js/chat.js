@@ -229,11 +229,16 @@ async function sendChat() {
             role: msg.role === 'bot' ? 'assistant' : 'user', content: msg.text
         }));
 
+        // Получаем текущий ГОСТ для передачи в запрос к ИИ
+        const currentGost = getCurrentGostName();
+        const systemPrompt = `Ты — академический ассистент. Текущий активный стандарт оформления документа: ${currentGost}. Учитывай это при генерации или редактировании текста.`;
+
         const response = await fetch(`${API_URL}/ask-stream`, {
             method: 'POST', headers: getAuthHeaders(),
             body: JSON.stringify({
                 question: question, match_count: 5, match_threshold: 0.2,
-                dual_language: false, history: historyToSend
+                dual_language: false, history: historyToSend,
+                system_prompt: systemPrompt
             })
         });
 
@@ -446,46 +451,71 @@ document.addEventListener('DOMContentLoaded', function() {
             e.stopPropagation();
         });
     }
-    
-    // GOST dropdown
-    const gostBtn = document.getElementById('gost-dropdown-btn');
-    const gostDropdown = document.getElementById('gost-dropdown');
-    
-    if (gostBtn && gostDropdown) {
-        gostBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            gostDropdown.classList.toggle('show');
-        });
-        
-        document.addEventListener('click', function() {
-            gostDropdown.classList.remove('show');
-        });
-        
-        gostDropdown.addEventListener('click', function(e) {
-            e.stopPropagation();
-        });
-    }
 });
 
 // ═══════════════════════════════════════════════════════════
 // ПРИМЕНЕНИЕ ФОРМАТА ГОСТ
 // ═══════════════════════════════════════════════════════════
 function applyGostFormat(format) {
+    // 1. Сохраняем в localStorage
+    localStorage.setItem('active_gost', format);
+    
     const gostSelect = document.getElementById('gost-select');
     if (gostSelect) {
         gostSelect.value = format;
-        applyGost();
     }
+    
+    // 2. Применяем CSS-класс к редактору
+    const editorContainer = document.getElementById('editor-container');
+    if (editorContainer) {
+        // Удаляем все старые классы gost-*
+        editorContainer.classList.remove('gost-report', 'gost-thesis', 'gost-article', 'gost-ord', 'gost-free');
+        // Добавляем новый
+        editorContainer.classList.add(format);
+    }
+
+    // 3. Обновляем визуальное выделение в dropdown (галочка)
+    document.querySelectorAll('.gost-option').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.getAttribute('data-format') === format) {
+            btn.classList.add('active');
+        }
+    });
+
+    // 4. Закрываем dropdown
     const gostDropdown = document.getElementById('gost-dropdown');
-    if (gostDropdown) {
-        gostDropdown.classList.remove('show');
-    }
+    if (gostDropdown) gostDropdown.classList.remove('show');
+
+    // 5. Обновляем контекст для ИИ
+    updateAIContext(format);
 }
 
-// ═══════════════════════════════════════════════════════════
-// ОБРАБОТКА DROPDOWN ДЛЯ ГОСТ И ЭКСПОРТА
-// ═══════════════════════════════════════════════════════════
+// Функция для получения названия текущего ГОСТа
+function getCurrentGostName() {
+    const format = localStorage.getItem('active_gost') || 'gost-report';
+    const names = {
+        'gost-report': 'ГОСТ 7.32-2017 (Отчет о НИР)',
+        'gost-thesis': 'ГОСТ 7.1-2003 (Диссертация)',
+        'gost-article': 'Статья ВАК',
+        'gost-ord': 'ГОСТ Р 7.0.97-2016 (ОРД)',
+        'gost-free': 'Свободное форматирование'
+    };
+    return names[format];
+}
+
+// Функция для передачи контекста ИИ
+function updateAIContext(format) {
+    window.currentGostContext = `Оформи ответ строго по ${getCurrentGostName()}`;
+    console.log('AI Context updated to:', getCurrentGostName());
+}
+
+// Функция инициализации при загрузке страницы — объединяем с обработкой dropdown
 document.addEventListener('DOMContentLoaded', function() {
+    // Инициализация ГОСТ
+    const savedGost = localStorage.getItem('active_gost') || 'gost-report';
+    applyGostFormat(savedGost);
+    
+    // Обработка dropdown для ГОСТ
     const gostBtn = document.getElementById('gost-dropdown-btn');
     const gostDropdown = document.getElementById('gost-dropdown');
     
@@ -497,21 +527,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         document.addEventListener('click', function() {
             gostDropdown.classList.remove('show');
-        });
-    }
-    
-    // Обработка dropdown для экспорта
-    const exportBtn = document.getElementById('export-dropdown-btn');
-    const exportDropdown = document.getElementById('export-dropdown');
-    
-    if (exportBtn && exportDropdown) {
-        exportBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            exportDropdown.classList.toggle('show');
-        });
-        
-        document.addEventListener('click', function() {
-            exportDropdown.classList.remove('show');
         });
     }
 });
