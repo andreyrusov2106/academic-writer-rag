@@ -928,12 +928,6 @@ font-size: 20px;
 line-height: 1;
 display: block;
 }
-.theme-icon::before {
-content: '🌙';
-}
-body.dark-theme .theme-icon::before {
-content: '☀️';
-}
 #theme-toggle-btn {
 font-size: 0;
 }
@@ -1003,6 +997,10 @@ transform: scale(0.95);
 .toolbar-icon-btn .icon {
 font-size: 18px;
 line-height: 1;
+}
+/* Скрываем оригинальный select ГОСТ */
+#gost-select {
+display: none;
 }
 .gost-select-mini {
 width: 36px;

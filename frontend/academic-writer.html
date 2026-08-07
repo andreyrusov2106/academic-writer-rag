@@ -42,13 +42,18 @@
         <aside class="left-toolbar">
 <!-- Группа: Формат -->
 <div class="toolbar-group">
-<select class="gost-select-mini" id="gost-select" onchange="applyGost()" title="Выбрать формат">
-<option value="gost-report">ГОСТ 7.32-2017</option>
-<option value="gost-thesis">ГОСТ 7.1-2003</option>
-<option value="gost-article">Статья ВАК</option>
-<option value="gost-ord">ГОСТ Р 7.0.97-2016</option>
-<option value="free">Свободное</option>
-</select>
+    <div class="dropdown-container">
+        <button class="toolbar-icon-btn" id="gost-dropdown-btn" title="Выбрать формат">
+            <span class="icon">📋</span>
+        </button>
+        <div class="dropdown-menu" id="gost-dropdown">
+            <button class="dropdown-item" onclick="applyGostFormat('gost-report')">ГОСТ 7.32-2017</button>
+            <button class="dropdown-item" onclick="applyGostFormat('gost-thesis')">ГОСТ 7.1-2003</button>
+            <button class="dropdown-item" onclick="applyGostFormat('gost-article')">Статья ВАК</button>
+            <button class="dropdown-item" onclick="applyGostFormat('gost-ord')">ГОСТ Р 7.0.97-2016</button>
+            <button class="dropdown-item" onclick="applyGostFormat('free')">Свободное</button>
+        </div>
+    </div>
 </div>
 <div class="toolbar-divider"></div>
 
@@ -59,9 +64,6 @@
     </button>
     <button class="toolbar-icon-btn" onclick="generateBibliography()" id="bibliography-btn" title="Список литературы">
         <span class="icon">📚</span>
-    </button>
-    <button class="toolbar-icon-btn" onclick="toggleTheme()" id="theme-toggle-btn" title="Переключить тему">
-        <span class="icon theme-icon"></span>
     </button>
     <button class="toolbar-icon-btn" onclick="toggleEditorVoice()" id="editor-voice-btn" title="Диктовать">
         <span class="icon">🎤</span>

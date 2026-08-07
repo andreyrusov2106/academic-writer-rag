@@ -425,9 +425,10 @@ function toggleTheme() {
 }
 
 // ═══════════════════════════════════════════════════════════
-// DROPDOWN МЕНЮ ДЛЯ ЭКСПОРТА
+// DROPDOWN МЕНЮ ДЛЯ ЭКСПОРТА И ГОСТ
 // ═══════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', function() {
+    // Export dropdown
     const exportBtn = document.getElementById('export-dropdown-btn');
     const exportDropdown = document.getElementById('export-dropdown');
     
@@ -445,4 +446,38 @@ document.addEventListener('DOMContentLoaded', function() {
             e.stopPropagation();
         });
     }
+    
+    // GOST dropdown
+    const gostBtn = document.getElementById('gost-dropdown-btn');
+    const gostDropdown = document.getElementById('gost-dropdown');
+    
+    if (gostBtn && gostDropdown) {
+        gostBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            gostDropdown.classList.toggle('show');
+        });
+        
+        document.addEventListener('click', function() {
+            gostDropdown.classList.remove('show');
+        });
+        
+        gostDropdown.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    }
 });
+
+// ═══════════════════════════════════════════════════════════
+// ПРИМЕНЕНИЕ ФОРМАТА ГОСТ
+// ═══════════════════════════════════════════════════════════
+function applyGostFormat(format) {
+    const gostSelect = document.getElementById('gost-select');
+    if (gostSelect) {
+        gostSelect.value = format;
+        applyGost();
+    }
+    const gostDropdown = document.getElementById('gost-dropdown');
+    if (gostDropdown) {
+        gostDropdown.classList.remove('show');
+    }
+}
