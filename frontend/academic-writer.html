@@ -39,28 +39,35 @@
     </header>
 
     <div class="app-layout">
-        <main class="editor-panel">
-            <div class="editor-toolbar">
-                <div class="toolbar-group">
-                    <select class="gost-select" id="gost-select" onchange="applyGost()">
-                        <option value="gost-report">ГОСТ 7.32-2017 (Отчёт о НИР)</option>
-                        <option value="gost-thesis">ГОСТ 7.1-2003 (Диссертация)</option>
-                        <option value="gost-article">Статья для журнала ВАК</option>
-                        <option value="gost-ord">ГОСТ Р 7.0.97-2016 (ОРД)</option>
-                        <option value="free">Свободное форматирование</option>
-                    </select>
-                </div>
-                <div class="toolbar-group">
-                    <button class="btn btn-secondary" onclick="generateTOC()" id="toc-btn">📑 Оглавление</button>
-                    <button class="btn btn-secondary" onclick="generateBibliography()" id="bibliography-btn">📚 Литература</button>
-                    <button class="btn btn-secondary" onclick="toggleEditorVoice()" id="editor-voice-btn" title="Диктовать текст в редактор">🎤 Диктовать</button>
-                </div>
-                <div class="toolbar-group">
-                    <button class="btn btn-primary" id="export-docx-btn" onclick="exportDocx()">📄 DOCX</button>
-                    <button class="btn btn-primary" id="export-pdf-btn" onclick="exportPdf()">📕 PDF</button>
-                </div>
+        <aside class="left-toolbar">
+            <div class="toolbar-section">
+                <select class="gost-select" id="gost-select" onchange="applyGost()">
+                    <option value="gost-report">ГОСТ 7.32-2017</option>
+                    <option value="gost-thesis">ГОСТ 7.1-2003</option>
+                    <option value="gost-article">Статья ВАК</option>
+                    <option value="gost-ord">ГОСТ Р 7.0.97-2016</option>
+                    <option value="free">Свободное</option>
+                </select>
             </div>
+            
+            <div class="toolbar-section">
+                <button class="toolbar-btn" onclick="generateTOC()" id="toc-btn" title="Оглавление">📑</button>
+                <button class="toolbar-btn" onclick="generateBibliography()" id="bibliography-btn" title="Список литературы">📚</button>
+                <button class="toolbar-btn" onclick="toggleTheme()" id="theme-toggle-btn-left" title="Тема">🌙</button>
+                <button class="toolbar-btn" onclick="toggleEditorVoice()" id="editor-voice-btn" title="Диктовать">🎤</button>
+            </div>
+            
+            <div class="toolbar-section">
+                <button class="toolbar-btn-primary" onclick="exportDocx()" id="export-docx-btn" title="Экспорт DOCX">📄</button>
+                <button class="toolbar-btn-primary" onclick="exportPdf()" id="export-pdf-btn" title="Экспорт PDF">📕</button>
+            </div>
+            
+            <div class="toolbar-section">
+                <button class="toolbar-btn" id="smart-actions-btn" title="Умные действия (Ctrl+M)">🎓</button>
+            </div>
+        </aside>
 
+        <main class="editor-panel">
             <div class="editor-wrapper">
                 <div class="editor-container gost-report" id="editor-container">
                     <div id="editor">

@@ -1,14 +1,3 @@
-```
-# Dependencies
-node_modules/
+# Examples 1:
 
-# Editors
-.vscode/
-
-# Build artifacts
-dist/
-build/
-*.min.js
-*.min.css
-*.bundle.js
-```
+# Example 2 (Project with artifacts):

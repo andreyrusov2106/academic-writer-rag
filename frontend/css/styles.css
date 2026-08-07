@@ -946,30 +946,90 @@ letter-spacing: 0.5px;
     overflow: hidden;
 }
 
-/* Левая панель: Редактор */
+/* Левая панель инструментов */
+.left-toolbar {
+    width: 60px;
+    background-color: #f8f9fa;
+    border-right: 1px solid #e5e7eb;
+    display: flex;
+    flex-direction: column;
+    padding: 16px 0;
+    gap: 16px;
+    overflow-y: auto;
+}
+
+.toolbar-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 0 12px;
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 16px;
+}
+
+.toolbar-section:last-child {
+    border-bottom: none;
+}
+
+.toolbar-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background-color: #ffffff;
+    border: 1px solid #d1d5db;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    transition: all 0.2s;
+}
+
+.toolbar-btn:hover {
+    background-color: #f3f4f6;
+    border-color: #9ca3af;
+    transform: scale(1.05);
+}
+
+.toolbar-btn-primary {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background-color: #2563eb;
+    border: none;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    transition: all 0.2s;
+}
+
+.toolbar-btn-primary:hover {
+    background-color: #1d4ed8;
+    transform: scale(1.05);
+}
+
+.gost-select {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    width: 36px;
+    padding: 8px 4px;
+    font-size: 10px;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    background-color: #ffffff;
+    cursor: pointer;
+}
+
+/* Центральная панель: Редактор */
 .editor-panel {
-    flex: 3; /* ~67% ширины */
+    flex: 2;
     display: flex;
     flex-direction: column;
     background-color: #ffffff;
-    border-right: 1px solid #e5e7eb;
     min-width: 0;
-}
-
-.editor-toolbar {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 12px 24px;
-    background-color: #f8f9fa;
-    border-bottom: 1px solid #e5e7eb;
-    flex-wrap: wrap;
-}
-
-.toolbar-group {
-    display: flex;
-    align-items: center;
-    gap: 8px;
 }
 
 .editor-wrapper {
@@ -985,10 +1045,6 @@ letter-spacing: 0.5px;
     background: #ffffff;
     min-height: 100%;
     padding: 40px 60px;
-    font-family: system-ui, -apple-system, sans-serif;
-    font-size: 16px;
-    line-height: 1.6;
-    color: #1f2937;
     box-sizing: border-box;
 }
 
@@ -1332,14 +1388,19 @@ body.dark-theme .editor-panel {
     background-color: #1e1e1e;
 }
 
-body.dark-theme .editor-container {
-    background-color: #1e1e1e;
+body.dark-theme .left-toolbar {
+    background-color: #2a2a2a;
+    border-right-color: #444444;
+}
+
+body.dark-theme .toolbar-btn {
+    background-color: #333333;
+    border-color: #444444;
     color: #e5e5e5;
 }
 
-body.dark-theme .editor-toolbar {
-    background-color: #2a2a2a;
-    border-bottom-color: #444444;
+body.dark-theme .toolbar-btn:hover {
+    background-color: #444444;
 }
 
 body.dark-theme .gost-select {
@@ -1361,6 +1422,15 @@ body.dark-theme .btn-secondary:hover {
 body.dark-theme .btn-primary {
     background-color: #2563eb;
     color: #ffffff;
+}
+
+body.dark-theme .toolbar-btn-primary {
+    background-color: #2563eb;
+    color: #ffffff;
+}
+
+body.dark-theme .toolbar-btn-primary:hover {
+    background-color: #1d4ed8;
 }
 
 body.dark-theme .assistant-panel {

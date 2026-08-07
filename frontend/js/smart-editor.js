@@ -14,41 +14,29 @@ function initSmartEditor() {
         return;
     }
     
-    // Отслеживаем выделение текста в редакторе
-    quill.on('selection-change', function(range, oldRange, source) {
-        console.log('📍 selection-change:', { range, source });
-        
-        if (range && range.length > 0) {
-            selectedText = quill.getText(range.index, range.length).trim();
-            selectedRange = range;
-            
-            console.log('📝 Выделен текст:', selectedText);
-            console.log(' Длина:', selectedText.length);
-            
-            if (selectedText.length > 10) {
-                // Получаем координаты выделения
-                const bounds = quill.getBounds(range.index, range.length);
-                console.log('📐 Bounds:', bounds);
-                
-                const editorRect = document.getElementById('editor-container').getBoundingClientRect();
-                console.log(' Editor rect:', editorRect);
-                
-                const left = editorRect.left + bounds.left + window.scrollX;
-                const top = editorRect.top + bounds.bottom + window.scrollY + 10;
-                
-                menu.style.left = left + 'px';
-                menu.style.top = top + 'px';
-                menu.classList.add('visible');
-                
-                console.log('✅ Меню показано на координатах:', left, top);
-            } else {
-                menu.classList.remove('visible');
-                console.log('⚠️ Текст слишком короткий (< 10 символов)');
+    // Обработчик для кнопки Smart Actions
+    const smartBtn = document.getElementById('smart-actions-btn');
+    if (smartBtn) {
+        smartBtn.addEventListener('click', function() {
+            const currentSelectedText = window.getSelection().toString().trim();
+            if (!currentSelectedText) {
+                alert('Сначала выделите текст в редакторе');
+                return;
             }
-        } else {
-            // Выделение снято
-            menu.classList.remove('visible');
-            console.log('🔕 Выделение снято, меню скрыто');
+            showSmartMenu(currentSelectedText);
+        });
+    }
+    
+    // Горячая клавиша Ctrl+M
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.key === 'm') {
+            e.preventDefault();
+            const currentSelectedText = window.getSelection().toString().trim();
+            if (!currentSelectedText) {
+                alert('Сначала выделите текст в редакторе');
+                return;
+            }
+            showSmartMenu(currentSelectedText);
         }
     });
     
@@ -56,14 +44,45 @@ function initSmartEditor() {
     document.addEventListener('click', function(e) {
         const isClickOnMenu = menu.contains(e.target);
         const isClickOnEditor = e.target.closest('.ql-editor');
+        const isClickOnSmartBtn = e.target.closest('#smart-actions-btn');
         
-        if (!isClickOnMenu && !isClickOnEditor) {
+        if (!isClickOnMenu && !isClickOnEditor && !isClickOnSmartBtn) {
             menu.classList.remove('visible');
             selectedText = '';
             selectedRange = null;
             console.log('🖱️ Клик вне меню и редактора, выделение очищено');
         }
     });
+}
+
+function showSmartMenu(text) {
+    console.log('📍 showSmartMenu вызван с текстом:', text);
+    
+    const menu = document.getElementById('smart-menu');
+    if (!menu) {
+        console.error('❌ Элемент #smart-menu не найден в DOM!');
+        return;
+    }
+    
+    selectedText = text;
+    
+    // Получаем координаты выделения через Quill
+    const range = quill.getSelection(true);
+    if (range && range.length > 0) {
+        selectedRange = range;
+        const bounds = quill.getBounds(range.index, range.length);
+        
+        const editorRect = document.getElementById('editor-container').getBoundingClientRect();
+        
+        const left = editorRect.left + bounds.left + window.scrollX;
+        const top = editorRect.top + bounds.bottom + window.scrollY + 10;
+        
+        menu.style.left = left + 'px';
+        menu.style.top = top + 'px';
+        menu.classList.add('visible');
+        
+        console.log('✅ Меню показано на координатах:', left, top);
+    }
 }
 
 window.executeSmartAction = async function executeSmartAction(action) {
