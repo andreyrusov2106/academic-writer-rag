@@ -36,16 +36,15 @@ function updateWordCount() {
     const text = quill.getText().trim();
     const words = text ? text.split(/\s+/).length : 0;
     const chars = text.length;
-    const pages = Math.max(1, Math.ceil(words / 250));
+    const pages = Math.ceil(chars / 1800);
     
-    let counter = document.getElementById('word-counter');
-    if (!counter) {
-        counter = document.createElement('div');
-        counter.id = 'word-counter';
-        counter.style.cssText = 'position: fixed; bottom: 10px; left: 10px; background: rgba(102, 126, 234, 0.9); color: white; padding: 8px 15px; border-radius: 20px; font-size: 13px; z-index: 1000; box-shadow: 0 2px 8px rgba(0,0,0,0.2);';
-        document.body.appendChild(counter);
-    }
-    counter.textContent = `📝 ${words} слов | ${chars} симв. | ~${pages} стр.`;
+    const wordCounter = document.getElementById('word-count');
+    const charCounter = document.getElementById('char-count');
+    const pageCounter = document.getElementById('page-count');
+    
+    if (wordCounter) wordCounter.textContent = `${words} слов`;
+    if (charCounter) charCounter.textContent = `${chars} симв.`;
+    if (pageCounter) pageCounter.textContent = `~${pages} стр.`;
 }
 
 function applyGost(showNotification = true) {

@@ -200,7 +200,6 @@
     </div>
 
     <!-- Наши скрипты -->
-    <script src="js/utils.js"></script>
     <script src="js/editor.js"></script>
     <script src="js/chat.js"></script>
     <script src="js/i18n.js"></script>
@@ -213,6 +212,20 @@
     <div class="voice-status" id="voice-status">
         <div class="recording-indicator"></div>
         <span id="voice-status-text">Слушаю...</span>
+    </div>
+    
+    <!-- Нижняя строка состояния -->
+    <div class="status-bar">
+        <div class="status-left">
+            <span id="word-count">0 слов</span>
+            <span class="status-separator">·</span>
+            <span id="char-count">0 симв.</span>
+            <span class="status-separator">·</span>
+            <span id="page-count">~0 стр.</span>
+        </div>
+        <div class="status-right">
+            <span id="usage-indicator">0 / 10 запросов (free)</span>
+        </div>
     </div>
     
     <!-- Модальное окно авторизации -->
@@ -251,12 +264,6 @@
                 <div id="register-error" class="auth-error"></div>
             </form>
         </div>
-    </div>
-
-    <!-- Floating Widget: Счетчик и выход -->
-    <div id="user-widget" class="user-widget" style="display: none;">
-        <span id="usage-indicator">📊 0 / 10 (FREE)</span>
-        <button id="logout-btn" class="logout-btn-widget">Выйти</button>
     </div>
 
     <script>
