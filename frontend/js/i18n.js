@@ -97,24 +97,17 @@ if (sourcesTitle) sourcesTitle.textContent = t.sources;
 const smartActionsTitle = document.getElementById('smart-actions-title');
 if (smartActionsTitle) smartActionsTitle.textContent = t.smartActions;
 
-// Обновляем флажок языка
-const langToggle = document.getElementById('lang-toggle');
-if (langToggle) {
-    langToggle.textContent = currentLang === 'ru' ? '🇨🇳' : '🇷🇺';
+// Обновляем кнопку языка
+const langToggleText = document.getElementById('lang-toggle-text');
+if (langToggleText) {
+    langToggleText.textContent = currentLang === 'ru' ? 'CN' : 'RU';
 }
 
 // Оглавление
 const tocBtn = document.querySelector('[onclick="generateTOC()"]');
 if (tocBtn) tocBtn.textContent = t.tableOfContents;
 
-// Светлая тема
-const themeBtn = document.getElementById('theme-toggle-btn');
-if (themeBtn) {
-    // Обновляем только иконку и текст, сохраняя функцию toggleTheme
-    const icon = currentLang === 'ru' ? '🌙' : '☀️';
-    const text = currentLang === 'ru' ? 'Темная тема' : 'Светлая тема';
-    themeBtn.textContent = `${icon} ${text}`;
-}
+// Светлая тема - теперь обрабатывается через toggleTheme() в editor.js
 
 // Список литературы
 const biblioBtn = document.querySelector('[onclick="generateBibliography()"]');
@@ -137,7 +130,13 @@ if (dragDropText) dragDropText.textContent = t.dragDropText;
 document.addEventListener('DOMContentLoaded', () => {
 updateInterfaceText();
 
-// Обработчик клика на флажок
+// Обработчик клика на кнопку переключения темы
+const themeToggleBtn = document.getElementById('theme-toggle-btn');
+if (themeToggleBtn) {
+    themeToggleBtn.addEventListener('click', toggleTheme);
+}
+
+// Обработчик клика на кнопку переключения языка
 const langToggle = document.getElementById('lang-toggle');
 if (langToggle) {
     langToggle.addEventListener('click', () => {
