@@ -2,6 +2,8 @@ const translations = {
 ru: {
 exportDocx: 'Экспорт DOCX',
 exportPdf: 'Экспорт PDF',
+export: 'Экспорт',
+selectFormat: 'Выбрать формат',
 addTerm: '+ Добавить термин',
 send: 'Отправить',
 clearChat: 'Очистить чат',
@@ -24,6 +26,8 @@ voiceInput: 'Голосовой ввод'
 zh: {
 exportDocx: '导出 DOCX',
 exportPdf: '导出 PDF',
+export: '导出',
+selectFormat: '选择格式',
 addTerm: '+ 添加术语',
 send: '发送',
 clearChat: '清除聊天',
@@ -56,11 +60,11 @@ updateInterfaceText();
 function updateInterfaceText() {
 const t = translations[currentLang];
 
-// Обновляем кнопки экспорта
-const exportDocxBtn = document.getElementById('export-docx-btn');
+// Обновляем кнопки экспорта - только label, не трогая иконку
+const exportDocxBtn = document.querySelector('#export-docx-btn .label');
 if (exportDocxBtn) exportDocxBtn.textContent = t.exportDocx;
 
-const exportPdfBtn = document.getElementById('export-pdf-btn');
+const exportPdfBtn = document.querySelector('#export-pdf-btn .label');
 if (exportPdfBtn) exportPdfBtn.textContent = t.exportPdf;
 
 // Кнопка добавления термина
@@ -103,23 +107,27 @@ if (langToggleText) {
     langToggleText.textContent = currentLang === 'ru' ? 'CN' : 'RU';
 }
 
-// Оглавление
-const tocBtn = document.querySelector('[onclick="generateTOC()"]');
-if (tocBtn) tocBtn.textContent = t.tableOfContents;
+// Оглавление - обновляем только tooltip, не трогая иконку
+const tocBtn = document.getElementById('toc-btn');
+if (tocBtn) tocBtn.title = t.tableOfContents;
 
 // Светлая тема - теперь обрабатывается через toggleTheme() в editor.js
 
-// Список литературы
-const biblioBtn = document.querySelector('[onclick="generateBibliography()"]');
-if (biblioBtn) biblioBtn.textContent = t.bibliography;
+// Список литературы - обновляем только tooltip, не трогая иконку
+const biblioBtn = document.getElementById('bibliography-btn');
+if (biblioBtn) biblioBtn.title = t.bibliography;
 
-// Диктовать (кнопка голосового ввода в редакторе)
+// Диктовать (кнопка голосового ввода в редакторе) - обновляем только tooltip, не трогая иконку
 const dictateBtn = document.getElementById('editor-voice-btn');
-if (dictateBtn) {
-    // Сохраняем иконку микрофона и добавляем перевод
-    const micIcon = '🎤 ';
-    dictateBtn.textContent = `${micIcon}${t.dictate}`;
-}
+if (dictateBtn) dictateBtn.title = t.dictate;
+
+// Кнопка экспорта (dropdown) - обновляем только tooltip, не трогая иконку
+const exportDropdownBtn = document.getElementById('export-dropdown-btn');
+if (exportDropdownBtn) exportDropdownBtn.title = t.export;
+
+// Кнопка выбора формата ГОСТ - обновляем только tooltip, не трогая иконку
+const gostDropdownBtn = document.getElementById('gost-dropdown-btn');
+if (gostDropdownBtn) gostDropdownBtn.title = t.selectFormat;
 
 // Текст зоны перетаскивания файлов
 const dragDropText = document.getElementById('drag-drop-text');
