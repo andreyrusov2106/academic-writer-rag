@@ -79,10 +79,6 @@
             </div>
             
             <div class="tab-content active" id="tab-terms">
-                <div class="tab-header-info">
-                    <span class="db-status">✓ База: <span id="chunk-count">0</span> чанков</span>
-                    <button class="clear-chat-btn" id="clear-chat-btn" onclick="clearChatHistory()">Очистить чат</button>
-                </div>
                 <div id="terms-list"></div>
                 <button class="add-term-btn" id="add-term-btn" onclick="showAddTermModal()">+ Добавить термин</button>
             </div>
@@ -92,6 +88,10 @@
             </div>
 
             <div class="tab-content" id="tab-assistant">
+                <div class="tab-header-info">
+                    <span class="db-status">✓ База: <span id="chunk-count">0</span> чанков</span>
+                    <button class="clear-chat-btn" id="clear-chat-btn" onclick="clearChatHistory()">Очистить чат</button>
+                </div>
                 <div class="chat-messages" id="chat-messages">
                     <div class="chat-message bot">Здравствуйте! Я — Наталья Петровна Копцева. Чем могу помочь с вашей работой?</div>
                 </div>

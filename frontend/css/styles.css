@@ -979,15 +979,17 @@ letter-spacing: 0.5px;
 }
 
 .editor-container {
-    max-width: 800px;
-    margin: 0 auto;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
     background: #ffffff;
     min-height: 100%;
-    padding: 20px;
+    padding: 40px 60px;
     font-family: system-ui, -apple-system, sans-serif;
     font-size: 16px;
     line-height: 1.6;
     color: #1f2937;
+    box-sizing: border-box;
 }
 
 /* Правая панель: Ассистент */
@@ -1325,6 +1327,32 @@ body.dark-theme .editor-panel {
 body.dark-theme .editor-container {
     background-color: #1e1e1e;
     color: #e5e5e5;
+}
+
+body.dark-theme .editor-toolbar {
+    background-color: #2a2a2a;
+    border-bottom-color: #444444;
+}
+
+body.dark-theme .gost-select {
+    background-color: #333333;
+    color: #e5e5e5;
+    border-color: #444444;
+}
+
+body.dark-theme .btn-secondary {
+    background-color: #333333;
+    color: #e5e5e5;
+    border-color: #444444;
+}
+
+body.dark-theme .btn-secondary:hover {
+    background-color: #444444;
+}
+
+body.dark-theme .btn-primary {
+    background-color: #2563eb;
+    color: #ffffff;
 }
 
 body.dark-theme .assistant-panel {
