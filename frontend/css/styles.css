@@ -83,6 +83,7 @@ body {
     color: var(--text-main);
     min-height: 100vh;
     padding: 15px;
+    padding-bottom: 32px;
     transition: background 0.3s ease, color 0.3s ease;
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
@@ -818,59 +819,42 @@ body.dark-theme .voice-lang-btn.active {
     background: #eee;
 }
 
-/* Floating Widget в правом нижнем углу */
-.user-widget {
+/* ═══════════════════════════════════════════════════════════
+   НИЖНЯЯ СТРОКА СОСТОЯНИЯ
+   ═══════════════════════════════════════════════════════════ */
+.status-bar {
     position: fixed;
-    bottom: 20px;
-    right: 20px;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 32px;
+    background-color: #1e3a5f;
+    color: #ffffff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 16px;
+    font-size: 12px;
+    z-index: 1000;
+}
+.status-left, .status-right {
     display: flex;
     align-items: center;
-    gap: 12px;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    padding: 10px 16px;
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-    border: 1px solid rgba(0, 0, 0, 0.08);
-    z-index: 1000;
-    font-size: 14px;
-    transition: all 0.3s ease;
+    gap: 8px;
 }
-
-.user-widget:hover {
-    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.2);
-    transform: translateY(-2px);
+.status-separator {
+    opacity: 0.5;
 }
-
 #usage-indicator {
-    font-weight: 600;
-    white-space: nowrap;
-    color: #4caf50;
-}
-
-.logout-btn-widget {
-    background: #f44336;
-    color: white;
-    border: none;
-    padding: 6px 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 13px;
+    color: #ffffff;
     font-weight: 500;
-    transition: background 0.2s;
-}
-
-.logout-btn-widget:hover {
-    background: #d32f2f;
 }
 
 /* Адаптивность для мобильных */
 @media (max-width: 768px) {
-    .user-widget {
-        bottom: 10px;
-        right: 10px;
-        padding: 8px 12px;
-        font-size: 12px;
+    .status-bar {
+        padding: 0 10px;
+        font-size: 11px;
     }
 }
 
@@ -942,6 +926,10 @@ transform: scale(0.95);
 .theme-icon {
 font-size: 20px;
 line-height: 1;
+display: block;
+}
+#theme-toggle-btn {
+font-size: 0;
 }
 #lang-toggle-text {
 font-size: 13px;
