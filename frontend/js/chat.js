@@ -545,4 +545,140 @@ document.addEventListener('DOMContentLoaded', function() {
     // Инициализация ГОСТ
     const savedGost = localStorage.getItem('active_gost') || 'gost-report';
     applyGostFormat(savedGost);
+    
+    // ═══════════════════════════════════════════════════════════
+    // ЗАГРУЗКА PDF (DRAG-AND-DROP)
+    // ═══════════════════════════════════════════════════════════
+    const dropZone = document.getElementById('drop-zone');
+    const pdfInput = document.getElementById('pdf-input');
+    
+    if (dropZone && pdfInput) {
+        // Drag over
+        dropZone.addEventListener('dragover', handleDragOver);
+        
+        // Drag leave
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+        
+        // Drop
+        dropZone.addEventListener('drop', handleDrop);
+        
+        // Click on drop zone triggers file input
+        dropZone.addEventListener('click', () => pdfInput.click());
+        
+        // File input change
+        pdfInput.addEventListener('change', handleFileSelect);
+    }
 });
+
+// ═══════════════════════════════════════════════════════════
+// ФУНКЦИИ ЗАГРУЗКИ PDF
+// ═══════════════════════════════════════════════════════════
+function handleDragOver(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    const dropZone = document.getElementById('drop-zone');
+    if (dropZone) {
+        dropZone.classList.add('dragover');
+    }
+}
+
+function handleDrop(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    const dropZone = document.getElementById('drop-zone');
+    if (dropZone) {
+        dropZone.classList.remove('dragover');
+    }
+    
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+        const file = files[0];
+        if (file.type === 'application/pdf') {
+            uploadPdf(file);
+        } else {
+            alert('Пожалуйста, выберите PDF файл');
+        }
+    }
+}
+
+function handleFileSelect(e) {
+    const files = e.target.files;
+    if (files.length > 0) {
+        const file = files[0];
+        if (file.type === 'application/pdf') {
+            uploadPdf(file);
+        } else {
+            alert('Пожалуйста, выберите PDF файл');
+            e.target.value = '';
+        }
+    }
+}
+
+async function uploadPdf(file) {
+    if (!authToken) {
+        alert('Требуется авторизация для загрузки файлов');
+        document.getElementById('auth-modal').style.display = 'flex';
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const sourcesList = document.getElementById('sources-list');
+    if (sourcesList) {
+        sourcesList.innerHTML = '<div class="chat-message bot">Загрузка PDF...</div>';
+    }
+    
+    try {
+        const response = await fetch(`${API_URL}/upload-pdf`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: formData
+        });
+        
+        if (response.status === 401) {
+            alert('Сессия истекла. Войдите снова.');
+            localStorage.removeItem('academic_writer_token');
+            localStorage.removeItem('academic_writer_user');
+            authToken = null;
+            document.getElementById('auth-modal').style.display = 'flex';
+            return;
+        }
+        
+        if (!response.ok) {
+            throw new Error(`Ошибка загрузки: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        // Очищаем зону загрузки
+        const dropZone = document.getElementById('drop-zone');
+        if (dropZone) {
+            dropZone.style.display = 'none';
+        }
+        
+        // Показываем загруженный файл в списке источников
+        if (sourcesList) {
+            sourcesList.innerHTML = '';
+            const sourceEl = document.createElement('div');
+            sourceEl.className = 'source-item';
+            sourceEl.style.borderLeftColor = '#4caf50';
+            sourceEl.innerHTML = `
+                <strong>[1] ${file.name}</strong><br>
+                <em>Файл успешно загружен и обработан</em>
+            `;
+            sourcesList.appendChild(sourceEl);
+        }
+        
+        alert(`Файл "${file.name}" успешно загружен!`);
+        
+    } catch (error) {
+        console.error('Ошибка загрузки PDF:', error);
+        if (sourcesList) {
+            sourcesList.innerHTML = `<div class="chat-message bot" style="color: red;">Ошибка: ${error.message}</div>`;
+        }
+        alert('Ошибка при загрузке файла');
+    }
+}

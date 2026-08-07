@@ -418,6 +418,42 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════
+   ЗОНА ЗАГРУЗКИ PDF (ИСТОЧНИКИ)
+   ═══════════════════════════════════════════════════════════ */
+.upload-area {
+    padding: 20px;
+    text-align: center;
+}
+
+.drop-zone {
+    border: 2px dashed var(--primary);
+    border-radius: 12px;
+    padding: 40px 20px;
+    margin-top: 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: var(--bg-container);
+}
+
+.drop-zone:hover,
+.drop-zone.dragover {
+    background: var(--primary-light);
+    border-color: var(--primary-dark);
+}
+
+.drop-icon {
+    font-size: 48px;
+    display: block;
+    margin-bottom: 10px;
+}
+
+.drop-zone p {
+    color: var(--text-muted);
+    font-size: 14px;
+    margin: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════
    ФОРМАТИРОВАНИЕ ГОСТ
    ═══════════════════════════════════════════════════════════ */
 /* Базовые стили редактора */
