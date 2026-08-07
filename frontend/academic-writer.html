@@ -40,32 +40,63 @@
 
     <div class="app-layout">
         <aside class="left-toolbar">
-            <div class="toolbar-section">
-                <select class="gost-select" id="gost-select" onchange="applyGost()">
-                    <option value="gost-report">ГОСТ 7.32-2017</option>
-                    <option value="gost-thesis">ГОСТ 7.1-2003</option>
-                    <option value="gost-article">Статья ВАК</option>
-                    <option value="gost-ord">ГОСТ Р 7.0.97-2016</option>
-                    <option value="free">Свободное</option>
-                </select>
-            </div>
-            
-            <div class="toolbar-section">
-                <button class="toolbar-btn" onclick="generateTOC()" id="toc-btn" title="Оглавление">📑</button>
-                <button class="toolbar-btn" onclick="generateBibliography()" id="bibliography-btn" title="Список литературы">📚</button>
-                <button class="toolbar-btn" onclick="toggleTheme()" id="theme-toggle-btn-left" title="Тема">🌙</button>
-                <button class="toolbar-btn" onclick="toggleEditorVoice()" id="editor-voice-btn" title="Диктовать">🎤</button>
-            </div>
-            
-            <div class="toolbar-section">
-                <button class="toolbar-btn-primary" onclick="exportDocx()" id="export-docx-btn" title="Экспорт DOCX">📄</button>
-                <button class="toolbar-btn-primary" onclick="exportPdf()" id="export-pdf-btn" title="Экспорт PDF">📕</button>
-            </div>
-            
-            <div class="toolbar-section">
-                <button class="toolbar-btn" id="smart-actions-btn" title="Умные действия (Ctrl+M)">🎓</button>
-            </div>
-        </aside>
+<!-- Группа: Формат -->
+<div class="toolbar-group">
+<select class="gost-select-mini" id="gost-select" onchange="applyGost()" title="Выбрать формат">
+<option value="gost-report">ГОСТ 7.32-2017</option>
+<option value="gost-thesis">ГОСТ 7.1-2003</option>
+<option value="gost-article">Статья ВАК</option>
+<option value="gost-ord">ГОСТ Р 7.0.97-2016</option>
+<option value="free">Свободное</option>
+</select>
+</div>
+<div class="toolbar-divider"></div>
+
+<!-- Группа: Действия -->
+<div class="toolbar-group">
+    <button class="toolbar-icon-btn" onclick="generateTOC()" id="toc-btn" title="Оглавление">
+        <span class="icon">📑</span>
+    </button>
+    <button class="toolbar-icon-btn" onclick="generateBibliography()" id="bibliography-btn" title="Список литературы">
+        <span class="icon">📚</span>
+    </button>
+    <button class="toolbar-icon-btn" onclick="toggleTheme()" id="theme-toggle-btn" title="Переключить тему">
+        <span class="icon theme-icon"></span>
+    </button>
+    <button class="toolbar-icon-btn" onclick="toggleEditorVoice()" id="editor-voice-btn" title="Диктовать">
+        <span class="icon">🎤</span>
+    </button>
+</div>
+
+<div class="toolbar-divider"></div>
+
+<!-- Группа: Экспорт (dropdown) -->
+<div class="toolbar-group">
+    <div class="dropdown-container">
+        <button class="toolbar-icon-btn" id="export-dropdown-btn" title="Экспорт">
+            <span class="icon">📥</span>
+        </button>
+        <div class="dropdown-menu" id="export-dropdown">
+            <button class="dropdown-item" onclick="exportDocx()" id="export-docx-btn">
+                <span class="icon">📄</span>
+                <span class="label">DOCX</span>
+            </button>
+            <button class="dropdown-item" onclick="exportPdf()" id="export-pdf-btn">
+                <span class="icon">📕</span>
+                <span class="label">PDF</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="toolbar-divider"></div>
+
+<!-- Группа: Smart Actions -->
+<div class="toolbar-group">
+    <button class="toolbar-icon-btn" id="smart-actions-btn" title="Умные действия (Ctrl+M)">
+        <span class="icon">🎓</span>
+    </button>
+</div></aside>
 
         <main class="editor-panel">
             <div class="editor-wrapper">

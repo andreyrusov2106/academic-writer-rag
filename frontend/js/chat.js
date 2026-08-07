@@ -421,11 +421,28 @@ function toggleTheme() {
         themeIcon.textContent = isDark ? '☀️' : '🌙';
     }
     
-    // Обновляем иконку в левой панели
-    const themeBtnLeft = document.getElementById('theme-toggle-btn-left');
-    if (themeBtnLeft) {
-        themeBtnLeft.textContent = isDark ? '☀️' : '🌙';
-    }
-    
     localStorage.setItem('theme', isDark ? 'dark' : 'light');
 }
+
+// ═══════════════════════════════════════════════════════════
+// DROPDOWN МЕНЮ ДЛЯ ЭКСПОРТА
+// ═══════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', function() {
+    const exportBtn = document.getElementById('export-dropdown-btn');
+    const exportDropdown = document.getElementById('export-dropdown');
+    
+    if (exportBtn && exportDropdown) {
+        exportBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            exportDropdown.classList.toggle('show');
+        });
+        
+        document.addEventListener('click', function() {
+            exportDropdown.classList.remove('show');
+        });
+        
+        exportDropdown.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    }
+});
