@@ -1,66 +1,49 @@
-```
-# Compiled and build artifacts
-*.pyc
-__pycache__/
-*.o
-*.obj
-dist/
-build/
-*.class
-*.exe
-*.dll
-*.so
-*.a
-*.out
-
+```gitignore
 # Dependencies
 node_modules/
-venv/
-.venv/
-.env
-.env.local
-.env.*
+
+# Build artifacts
+dist/
+build/
+*.min.js
+*.min.css
+*.bundle.js
 
 # Logs and temp files
 *.log
 *.tmp
-*.swp
-*.swo
+
+# Environment
+.env
+.env.local
+*.env.*
 
 # Editors
 .vscode/
 .idea/
 
-# System files
-.DS_Store
-Thumbs.db
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
 
 # Coverage reports
 coverage/
 htmlcov/
 .coverage
 
-# Compressed files
-*.zip
-*.gz
-*.tar
-*.tgz
-*.bz2
-*.xz
-*.7z
-*.rar
-*.zst
-*.lz4
-*.lzh
-*.cab
-*.arj
-*.rpm
-*.deb
-*.Z
-*.lz
-*.lzo
-*.tar.gz
-*.tar.bz2
-*.tar.xz
-*.tar.zst
+# OS generated files
+.DS_Store
+Thumbs.db
 ```
+
+Wait, let me reconsider the input. The only modified files are CSS and JS source files, which shouldn't be added to .gitignore. Let me check again.
+
+The input shows only frontend source files being modified (`frontend/css/styles.css`, `frontend/js/chat.js`). These are source files, not build artifacts or temporary files.
+
+Actually, looking at this more carefully, there are no build artifacts, dependency directories, or temporary files in the changes. Only source files are being modified.
+
+(empty)

@@ -440,6 +440,12 @@ document.addEventListener('DOMContentLoaded', function() {
     if (exportBtn && exportDropdown) {
         exportBtn.addEventListener('click', function(e) {
             e.stopPropagation();
+            
+            // Устанавливаем позицию dropdown
+            const rect = exportBtn.getBoundingClientRect();
+            exportDropdown.style.top = rect.top + 'px';
+            exportDropdown.style.left = (rect.right + 8) + 'px';
+            
             exportDropdown.classList.toggle('show');
         });
         
@@ -448,6 +454,31 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         exportDropdown.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    }
+    
+    // Обработка dropdown для ГОСТ
+    const gostBtn = document.getElementById('gost-dropdown-btn');
+    const gostDropdown = document.getElementById('gost-dropdown');
+    
+    if (gostBtn && gostDropdown) {
+        gostBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            
+            // Устанавливаем позицию dropdown
+            const rect = gostBtn.getBoundingClientRect();
+            gostDropdown.style.top = rect.top + 'px';
+            gostDropdown.style.left = (rect.right + 8) + 'px';
+            
+            gostDropdown.classList.toggle('show');
+        });
+        
+        document.addEventListener('click', function() {
+            gostDropdown.classList.remove('show');
+        });
+        
+        gostDropdown.addEventListener('click', function(e) {
             e.stopPropagation();
         });
     }
@@ -514,19 +545,4 @@ document.addEventListener('DOMContentLoaded', function() {
     // Инициализация ГОСТ
     const savedGost = localStorage.getItem('active_gost') || 'gost-report';
     applyGostFormat(savedGost);
-    
-    // Обработка dropdown для ГОСТ
-    const gostBtn = document.getElementById('gost-dropdown-btn');
-    const gostDropdown = document.getElementById('gost-dropdown');
-    
-    if (gostBtn && gostDropdown) {
-        gostBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            gostDropdown.classList.toggle('show');
-        });
-        
-        document.addEventListener('click', function() {
-            gostDropdown.classList.remove('show');
-        });
-    }
 });

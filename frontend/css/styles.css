@@ -1036,7 +1036,10 @@ align-items: center;
 padding: 12px 0;
 gap: 4px;
 overflow-y: auto;
+overflow-x: visible; /* ВАЖНО: разрешить overflow по X для dropdown */
 flex-shrink: 0;
+position: relative;
+z-index: 100; /* Добавить z-index */
 }
 .toolbar-group {
 display: flex;
@@ -1101,16 +1104,15 @@ position: relative;
 }
 .dropdown-menu {
 display: none;
-position: absolute;
-left: 100%;
-top: 0;
-margin-left: 8px;
+position: fixed; /* Изменить с absolute на fixed */
+left: 58px; /* Позиция справа от левой панели (50px + 8px отступ) */
+top: auto;
 background-color: #ffffff;
 border: 1px solid #e5e7eb;
 border-radius: 8px;
 box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-min-width: 120px;
-z-index: 1000;
+min-width: 180px;
+z-index: 10000; /* Очень высокий z-index */
 padding: 4px;
 }
 .dropdown-menu.show {
@@ -1954,7 +1956,10 @@ body.dark-theme .voice-btn {
     padding: 12px 0;
     gap: 4px;
     overflow-y: auto;
+    overflow-x: visible; /* ВАЖНО: разрешить overflow по X для dropdown */
     flex-shrink: 0;
+    position: relative;
+    z-index: 100; /* Добавить z-index */
 }
 
 .toolbar-group {
@@ -1999,16 +2004,15 @@ body.dark-theme .voice-btn {
 
 .dropdown-menu {
     display: none;
-    position: absolute;
-    left: 100%;
-    top: 0;
-    margin-left: 8px;
+    position: fixed; /* Изменить с absolute на fixed */
+    left: 58px; /* Позиция справа от левой панели (50px + 8px отступ) */
+    top: auto;
     background-color: #ffffff;
     border: 1px solid #e5e7eb;
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    min-width: 150px;
-    z-index: 1000;
+    min-width: 180px;
+    z-index: 10000; /* Очень высокий z-index */
     padding: 4px;
 }
 
