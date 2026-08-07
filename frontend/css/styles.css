@@ -914,21 +914,39 @@ letter-spacing: 0.3px;
 .header-right {
 display: flex;
 align-items: center;
+gap: 12px;
 }
-.lang-toggle-btn {
-background: transparent;
-border: 1px solid rgba(255, 255, 255, 0.3);
+.header-icon-btn {
+width: 40px;
+height: 40px;
+border-radius: 50%;
+background-color: rgba(255, 255, 255, 0.1);
+border: 1px solid rgba(255, 255, 255, 0.2);
 color: #ffffff;
-padding: 6px 12px;
-border-radius: 6px;
-font-size: 14px;
-font-weight: 500;
+display: flex;
+align-items: center;
+justify-content: center;
 cursor: pointer;
 transition: all 0.2s;
+font-size: 18px;
+padding: 0;
 }
-.lang-toggle-btn:hover {
-background-color: rgba(255, 255, 255, 0.1);
-border-color: rgba(255, 255, 255, 0.5);
+.header-icon-btn:hover {
+background-color: rgba(255, 255, 255, 0.2);
+border-color: rgba(255, 255, 255, 0.4);
+transform: scale(1.05);
+}
+.header-icon-btn:active {
+transform: scale(0.95);
+}
+.theme-icon {
+font-size: 20px;
+line-height: 1;
+}
+#lang-toggle-text {
+font-size: 13px;
+font-weight: 600;
+letter-spacing: 0.5px;
 }
 
 /* ═══════════════════════════════════════════════════════════

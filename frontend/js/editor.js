@@ -155,7 +155,10 @@ function exportPdf() {
 function toggleTheme() {
     document.body.classList.toggle('dark-theme');
     const isDark = document.body.classList.contains('dark-theme');
-    document.getElementById('theme-btn').textContent = isDark ? '☀️ Светлая тема' : '🌙 Темная тема';
+    const themeIcon = document.querySelector('.theme-icon');
+    if (themeIcon) {
+        themeIcon.textContent = isDark ? '☀️' : '🌙';
+    }
     localStorage.setItem('academic_writer_theme', isDark ? 'dark' : 'light');
 }
 
@@ -164,8 +167,8 @@ function loadTheme() {
     if (savedTheme === 'dark') {
         document.body.classList.add('dark-theme');
         setTimeout(() => {
-            const btn = document.getElementById('theme-btn');
-            if (btn) btn.textContent = '☀️ Светлая тема';
+            const themeIcon = document.querySelector('.theme-icon');
+            if (themeIcon) themeIcon.textContent = '☀️';
         }, 100);
     }
 }

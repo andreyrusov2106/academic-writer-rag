@@ -29,7 +29,12 @@
             <h1 class="app-title">Академический редактор</h1>
         </div>
         <div class="header-right">
-            <button id="lang-toggle" class="lang-toggle-btn" title="Переключить язык">CN</button>
+            <button id="theme-toggle-btn" class="header-icon-btn" title="Переключить тему">
+                <span class="theme-icon"></span>
+            </button>
+            <button id="lang-toggle" class="header-icon-btn" title="Переключить язык">
+                <span id="lang-toggle-text">CN</span>
+            </button>
         </div>
     </header>
 
@@ -48,7 +53,6 @@
                 <div class="toolbar-group">
                     <button class="btn btn-secondary" onclick="generateTOC()" id="toc-btn">📑 Оглавление</button>
                     <button class="btn btn-secondary" onclick="generateBibliography()" id="bibliography-btn">📚 Литература</button>
-                    <button class="btn btn-secondary" onclick="toggleTheme()" id="theme-toggle-btn">🌙 Тема</button>
                     <button class="btn btn-secondary" onclick="toggleEditorVoice()" id="editor-voice-btn" title="Диктовать текст в редактор">🎤 Диктовать</button>
                 </div>
                 <div class="toolbar-group">
