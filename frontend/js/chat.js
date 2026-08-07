@@ -481,3 +481,37 @@ function applyGostFormat(format) {
         gostDropdown.classList.remove('show');
     }
 }
+
+// ═══════════════════════════════════════════════════════════
+// ОБРАБОТКА DROPDOWN ДЛЯ ГОСТ И ЭКСПОРТА
+// ═══════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', function() {
+    const gostBtn = document.getElementById('gost-dropdown-btn');
+    const gostDropdown = document.getElementById('gost-dropdown');
+    
+    if (gostBtn && gostDropdown) {
+        gostBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            gostDropdown.classList.toggle('show');
+        });
+        
+        document.addEventListener('click', function() {
+            gostDropdown.classList.remove('show');
+        });
+    }
+    
+    // Обработка dropdown для экспорта
+    const exportBtn = document.getElementById('export-dropdown-btn');
+    const exportDropdown = document.getElementById('export-dropdown');
+    
+    if (exportBtn && exportDropdown) {
+        exportBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            exportDropdown.classList.toggle('show');
+        });
+        
+        document.addEventListener('click', function() {
+            exportDropdown.classList.remove('show');
+        });
+    }
+});
