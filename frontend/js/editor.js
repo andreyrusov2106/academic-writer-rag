@@ -187,3 +187,9 @@ class VoiceEditorButton extends VoiceButton {
 }
 
 Quill.register('modules/voiceButton', VoiceEditorButton);
+
+// Экспорт функций в глобальную область видимости для использования в HTML
+window.generateTOC = generateTOC;
+window.generateBibliography = generateBibliography;
+window.exportDocx = exportDocx;
+window.exportPdf = exportPdf;
