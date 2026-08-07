@@ -88,14 +88,16 @@
             </div>
 
             <div class="tab-content" id="tab-assistant">
-                <div class="tab-header-info">
+                <div class="assistant-header-info">
                     <span class="db-status">✓ База: <span id="chunk-count">0</span> чанков</span>
                     <button class="clear-chat-btn" id="clear-chat-btn" onclick="clearChatHistory()">Очистить чат</button>
                 </div>
-                <div class="chat-messages" id="chat-messages">
-                    <div class="chat-message bot">Здравствуйте! Я — Наталья Петровна Копцева. Чем могу помочь с вашей работой?</div>
+                <div class="chat-messages-container">
+                    <div class="chat-messages" id="chat-messages">
+                        <div class="chat-message bot">Здравствуйте! Я — Наталья Петровна Копцева. Чем могу помочь с вашей работой?</div>
+                    </div>
                 </div>
-                <div class="chat-input-container">
+                <div class="chat-controls">
                     <div class="chat-input-row">
                         <input type="text" class="chat-input" id="chat-input" placeholder="Задайте вопрос..." onkeypress="if(event.key === 'Enter') sendChat()">
                         <button class="voice-btn" id="chat-voice-btn" onclick="toggleChatVoice()" title="Голосовой ввод">🎤</button>
@@ -105,19 +107,6 @@
                 </div>
             </div>
         </aside>
-    </div>
-    
-    <!-- Модальное окно термина -->
-    <div class="modal" id="term-modal">
-        <div class="modal-content">
-            <h3>Добавить термин</h3>
-            <input type="text" id="term-input" placeholder="Введите термин...">
-            <textarea id="term-definition-input" placeholder="Определение (необязательно)..." style="width: 100%; padding: 10px; border: 2px solid var(--border-color); border-radius: 8px; margin-bottom: 15px; font-size: 14px; min-height: 80px; background: var(--bg-container); color: var(--text-main);"></textarea>
-            <div class="modal-buttons">
-                <button class="btn" onclick="closeModal()">Отмена</button>
-                <button class="btn btn-primary" onclick="addTerm()">Добавить</button>
-            </div>
-        </div>
     </div>
 
     <!-- Модальное окно поиска -->
@@ -212,6 +201,30 @@
     <div class="voice-status" id="voice-status">
         <div class="recording-indicator"></div>
         <span id="voice-status-text">Слушаю...</span>
+    </div>
+    
+    <!-- Модальное окно для добавления термина -->
+    <div id="add-term-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Добавить термин</h3>
+                <button class="modal-close" onclick="closeAddTermModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="term-name">Термин</label>
+                    <input type="text" id="term-name" placeholder="Введите термин">
+                </div>
+                <div class="form-group">
+                    <label for="term-definition">Определение</label>
+                    <textarea id="term-definition" placeholder="Введите определение" rows="4"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeAddTermModal()">Отмена</button>
+                <button class="btn btn-primary" onclick="saveTerm()">Сохранить</button>
+            </div>
+        </div>
     </div>
     
     <!-- Нижняя строка состояния -->

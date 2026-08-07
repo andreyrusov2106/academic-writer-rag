@@ -11,6 +11,62 @@ let authToken = localStorage.getItem('academic_writer_token');
 let currentUser = JSON.parse(localStorage.getItem('academic_writer_user') || 'null');
 
 // ═══════════════════════════════════════════════════════════
+// ТЕРМИНЫ
+// ═══════════════════════════════════════════════════════════
+let terms = JSON.parse(localStorage.getItem('academic_writer_terms') || '[]');
+
+function showAddTermModal() {
+    document.getElementById('add-term-modal').style.display = 'flex';
+    document.getElementById('term-name').value = '';
+    document.getElementById('term-definition').value = '';
+    document.getElementById('term-name').focus();
+}
+
+function closeAddTermModal() {
+    document.getElementById('add-term-modal').style.display = 'none';
+}
+
+function saveTerm() {
+    const name = document.getElementById('term-name').value.trim();
+    const definition = document.getElementById('term-definition').value.trim();
+    
+    if (!name || !definition) {
+        alert('Пожалуйста, заполните оба поля');
+        return;
+    }
+    
+    terms.push({ name, definition });
+    localStorage.setItem('academic_writer_terms', JSON.stringify(terms));
+    renderTerms();
+    closeAddTermModal();
+}
+
+function renderTerms() {
+    const termsList = document.getElementById('terms-list');
+    if (!termsList) return;
+    
+    termsList.innerHTML = '';
+    terms.forEach((term, index) => {
+        const termEl = document.createElement('div');
+        termEl.className = 'term-item';
+        termEl.innerHTML = `
+            <div class="term-header">
+                <strong>${term.name}</strong>
+                <button class="term-delete" onclick="deleteTerm(${index})">×</button>
+            </div>
+            <div class="term-definition">${term.definition}</div>
+        `;
+        termsList.appendChild(termEl);
+    });
+}
+
+function deleteTerm(index) {
+    terms.splice(index, 1);
+    localStorage.setItem('academic_writer_terms', JSON.stringify(terms));
+    renderTerms();
+}
+
+// ═══════════════════════════════════════════════════════════
 // АВТОРИЗАЦИЯ
 // ═══════════════════════════════════════════════════════════
 function initAuth() {
@@ -305,6 +361,7 @@ function incrementLocalCounter() {
 document.addEventListener('DOMContentLoaded', () => {
     initAuth();
     initChat();
+    renderTerms();
     
     // Инициализация темы
     const savedTheme = localStorage.getItem('theme') || 'light';
