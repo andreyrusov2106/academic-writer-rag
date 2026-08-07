@@ -373,10 +373,14 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.classList.add('dark-theme');
     }
     
-    // Переключатель темы
+    // Переключатель темы (в хедере и в левой панели)
     const themeBtn = document.getElementById('theme-toggle-btn');
+    const themeBtnLeft = document.getElementById('theme-toggle-btn-left');
     if (themeBtn) {
         themeBtn.addEventListener('click', toggleTheme);
+    }
+    if (themeBtnLeft) {
+        themeBtnLeft.addEventListener('click', toggleTheme);
     }
     
     // Инициализация вкладок
@@ -410,10 +414,17 @@ document.addEventListener('DOMContentLoaded', () => {
 function toggleTheme() {
     document.body.classList.toggle('dark-theme');
     const isDark = document.body.classList.contains('dark-theme');
-    const themeIcon = document.querySelector('.theme-icon');
     
+    // Обновляем иконку в хедере
+    const themeIcon = document.querySelector('.theme-icon');
     if (themeIcon) {
         themeIcon.textContent = isDark ? '☀️' : '🌙';
+    }
+    
+    // Обновляем иконку в левой панели
+    const themeBtnLeft = document.getElementById('theme-toggle-btn-left');
+    if (themeBtnLeft) {
+        themeBtnLeft.textContent = isDark ? '☀️' : '🌙';
     }
     
     localStorage.setItem('theme', isDark ? 'dark' : 'light');
