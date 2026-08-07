@@ -882,18 +882,53 @@ body.dark-theme .voice-lang-btn.active {
 /* ═══════════════════════════════════════════════════════════
    ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКА ИНТЕРФЕЙСА
    ═══════════════════════════════════════════════════════════ */
+.app-header {
+background-color: #1e3a5f;
+color: #ffffff;
+padding: 0 24px;
+height: 56px;
+display: flex;
+justify-content: space-between;
+align-items: center;
+box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+position: sticky;
+top: 0;
+z-index: 100;
+}
+.header-left {
+display: flex;
+align-items: center;
+gap: 12px;
+}
+.header-logo {
+font-size: 28px;
+line-height: 1;
+}
+.app-title {
+font-size: 20px;
+font-weight: 600;
+margin: 0;
+color: #ffffff;
+letter-spacing: 0.3px;
+}
+.header-right {
+display: flex;
+align-items: center;
+}
 .lang-toggle-btn {
-background: none;
-border: none;
-font-size: 24px;
+background: transparent;
+border: 1px solid rgba(255, 255, 255, 0.3);
+color: #ffffff;
+padding: 6px 12px;
+border-radius: 6px;
+font-size: 14px;
+font-weight: 500;
 cursor: pointer;
-padding: 5px;
-border-radius: 50%;
-transition: transform 0.2s;
+transition: all 0.2s;
 }
 .lang-toggle-btn:hover {
-transform: scale(1.2);
-background: rgba(255, 255, 255, 0.1);
+background-color: rgba(255, 255, 255, 0.1);
+border-color: rgba(255, 255, 255, 0.5);
 }
 
 /* ═══════════════════════════════════════════════════════════
