@@ -1305,3 +1305,102 @@ letter-spacing: 0.5px;
     margin-bottom: 16px;
     font-size: 13px;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   ТЕМНАЯ ТЕМА
+   ═══════════════════════════════════════════════════════════ */
+body.dark-theme {
+    background-color: #1a1a1a;
+    color: #e5e5e5;
+}
+
+body.dark-theme .app-header {
+    background-color: #0f172a;
+}
+
+body.dark-theme .editor-panel {
+    background-color: #1e1e1e;
+}
+
+body.dark-theme .editor-container {
+    background-color: #1e1e1e;
+    color: #e5e5e5;
+}
+
+body.dark-theme .assistant-panel {
+    background-color: #252525;
+}
+
+body.dark-theme .tabs-header {
+    background-color: #1e1e1e;
+    border-bottom-color: #333333;
+}
+
+body.dark-theme .tab-btn {
+    color: #9ca3af;
+}
+
+body.dark-theme .tab-btn:hover {
+    background-color: #2a2a2a;
+    color: #e5e5e5;
+}
+
+body.dark-theme .tab-btn.active {
+    color: #60a5fa;
+    background-color: #252525;
+    border-bottom-color: #60a5fa;
+}
+
+body.dark-theme .tab-content {
+    background-color: #252525;
+}
+
+body.dark-theme .chat-message.bot {
+    background-color: #333333;
+    color: #e5e5e5;
+    border-color: #444444;
+}
+
+body.dark-theme .chat-message.user {
+    background-color: #2563eb;
+    color: #ffffff;
+}
+
+body.dark-theme .chat-input-container {
+    background-color: #1e1e1e;
+    border-top-color: #333333;
+}
+
+body.dark-theme .chat-input {
+    background-color: #333333;
+    color: #e5e5e5;
+    border-color: #444444;
+}
+
+body.dark-theme .status-bar {
+    background-color: #0f172a;
+}
+
+body.dark-theme .accordion-section {
+    background-color: #333333;
+    border-color: #444444;
+}
+
+body.dark-theme .accordion-header {
+    background-color: #2a2a2a;
+    color: #e5e5e5;
+}
+
+body.dark-theme .accordion-content {
+    border-top-color: #444444;
+}
+
+body.dark-theme .modal-content {
+    background-color: #1e1e1e;
+    color: #e5e5e5;
+}
+
+body.dark-theme .source-item {
+    background-color: #333333;
+    border-left-color: #60a5fa;
+}

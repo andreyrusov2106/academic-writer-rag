@@ -158,7 +158,7 @@ async function sendChat() {
     renderChatMessage('user', question);
     chatHistory.push({ role: 'user', text: question });
     input.value = '';
-    const sendBtn = document.getElementById('chat-send');
+    const sendBtn = document.getElementById('send-btn');
     sendBtn.disabled = true; isStreaming = true;
 
     const answerDiv = document.createElement('div');
@@ -307,11 +307,13 @@ document.addEventListener('DOMContentLoaded', () => {
     initChat();
     
     // Инициализация темы
-    const savedTheme = localStorage.getItem('theme');
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    const themeIcon = document.querySelector('.theme-icon');
+    if (themeIcon) {
+        themeIcon.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+    }
     if (savedTheme === 'dark') {
         document.body.classList.add('dark-theme');
-        const themeIcon = document.querySelector('.theme-icon');
-        if (themeIcon) themeIcon.textContent = '☀️';
     }
     
     // Переключатель темы
@@ -324,6 +326,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const tabButtons = document.querySelectorAll('.tab-btn');
     const tabContents = document.querySelectorAll('.tab-content');
     
+    // Активируем первую вкладку по умолчанию
+    if (tabButtons.length > 0 && tabContents.length > 0) {
+        tabButtons[0].click();
+    }
+    
     tabButtons.forEach(btn => {
         btn.addEventListener('click', function() {
             const targetTab = this.getAttribute('data-tab');
@@ -332,7 +339,10 @@ document.addEventListener('DOMContentLoaded', () => {
             tabContents.forEach(c => c.classList.remove('active'));
             
             this.classList.add('active');
-            document.getElementById('tab-' + targetTab).classList.add('active');
+            const targetElement = document.getElementById('tab-' + targetTab);
+            if (targetElement) {
+                targetElement.classList.add('active');
+            }
         });
     });
 });
@@ -342,14 +352,12 @@ document.addEventListener('DOMContentLoaded', () => {
 // ═══════════════════════════════════════════════════════════
 function toggleTheme() {
     document.body.classList.toggle('dark-theme');
+    const isDark = document.body.classList.contains('dark-theme');
     const themeIcon = document.querySelector('.theme-icon');
+    
     if (themeIcon) {
-        if (document.body.classList.contains('dark-theme')) {
-            themeIcon.textContent = '☀️';
-            localStorage.setItem('theme', 'dark');
-        } else {
-            themeIcon.textContent = '🌙';
-            localStorage.setItem('theme', 'light');
-        }
+        themeIcon.textContent = isDark ? '☀️' : '🌙';
     }
+    
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
 }
