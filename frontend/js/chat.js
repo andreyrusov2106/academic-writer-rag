@@ -11,6 +11,18 @@ let authToken = localStorage.getItem('academic_writer_token');
 let currentUser = JSON.parse(localStorage.getItem('academic_writer_user') || 'null');
 
 // ═══════════════════════════════════════════════════════════
+// УТИЛИТЫ
+// ═══════════════════════════════════════════════════════════
+function escapeHtml(str) {
+    return String(str)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+}
+
+// ═══════════════════════════════════════════════════════════
 // ТЕРМИНЫ
 // ═══════════════════════════════════════════════════════════
 let terms = JSON.parse(localStorage.getItem('academic_writer_terms') || '[]');
@@ -51,10 +63,10 @@ function renderTerms() {
         termEl.className = 'term-item';
         termEl.innerHTML = `
             <div class="term-header">
-                <strong>${term.name}</strong>
+                <strong>${escapeHtml(term.name)}</strong>
                 <button class="term-delete" onclick="deleteTerm(${index})">×</button>
             </div>
-            <div class="term-definition">${term.definition}</div>
+            <div class="term-definition">${escapeHtml(term.definition)}</div>
         `;
         termsList.appendChild(termEl);
     });
@@ -678,7 +690,7 @@ async function uploadPdf(file) {
             sourceEl.className = 'source-item';
             sourceEl.style.borderLeftColor = '#4caf50';
             sourceEl.innerHTML = `
-                <strong>[1] ${file.name}</strong><br>
+                <strong>[1] ${escapeHtml(file.name)}</strong><br>
                 <em>Файл успешно загружен и обработан</em>
             `;
             sourcesList.appendChild(sourceEl);
