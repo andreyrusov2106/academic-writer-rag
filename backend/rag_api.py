@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import os
+import uuid
 import psycopg2
 import requests
 import logging
@@ -268,16 +269,16 @@ def get_embedding(text: str) -> list[float]:
     embedding = embed_model.encode([text], normalize_embeddings=True)
     return embedding[0].tolist()
 
-def search_documents(query_embedding: list[float], match_count=5, match_threshold=0.2):
+def search_documents(query_embedding: list[float], match_count=5, match_threshold=0.2, user_id: int = None):
     try:
         conn = get_db_connection()
         with conn.cursor() as cur:
             cur.execute(
                 """
                 SELECT id, title, article_url, chunk_text, similarity 
-                FROM match_documents(%s::vector, %s, %s)
+                FROM match_documents(%s::vector, %s, %s, %s)
                 """,
-                (query_embedding, match_count, match_threshold)
+                (query_embedding, match_count, match_threshold, user_id)
             )
             results = cur.fetchall()
         conn.close()
@@ -302,6 +303,7 @@ class Chunk:
     chunk_index: int
     text: str
     embedding: list = field(default_factory=list)
+    user_id: int = None
 
 def pdf_to_text(path: str) -> str:
     pages = []
@@ -352,7 +354,7 @@ def get_embeddings(texts: list[str]) -> list[list[float]]:
 def save_chunks_to_db(chunks: list[Chunk]) -> int:
     conn = get_db_connection()
     rows = [
-        (c.article_url, c.title, c.chunk_index, c.text, c.embedding)
+        (c.article_url, c.title, c.chunk_index, c.text, c.embedding, c.user_id)
         for c in chunks
     ]
     try:
@@ -360,10 +362,10 @@ def save_chunks_to_db(chunks: list[Chunk]) -> int:
             for row in rows:
                 cur.execute(
                     """
-                    INSERT INTO documents (article_url, title, chunk_index, chunk_text, embedding)
-                    VALUES (%s, %s, %s, %s, %s)
+                    INSERT INTO documents (article_url, title, chunk_index, chunk_text, embedding, user_id)
+                    VALUES (%s, %s, %s, %s, %s, %s)
                     ON CONFLICT (article_url, chunk_index) 
-                    DO UPDATE SET chunk_text = EXCLUDED.chunk_text, embedding = EXCLUDED.embedding
+                    DO UPDATE SET chunk_text = EXCLUDED.chunk_text, embedding = EXCLUDED.embedding, user_id = EXCLUDED.user_id
                     """,
                     row
                 )
@@ -376,7 +378,7 @@ def save_chunks_to_db(chunks: list[Chunk]) -> int:
     finally:
         conn.close()
 
-def process_pdf(file_path: str, filename: str) -> dict:
+def process_pdf(file_path: str, display_title: str, storage_name: str, user_id: int = None) -> dict:
     raw_text = pdf_to_text(file_path)
     if not raw_text.strip():
         return {"success": False, "error": "Не удалось извлечь текст из PDF"}
@@ -390,11 +392,12 @@ def process_pdf(file_path: str, filename: str) -> dict:
     
     chunks = [
         Chunk(
-            article_url=filename,
-            title=filename,
+            article_url=storage_name,
+            title=display_title,
             chunk_index=i,
             text=t,
             embedding=emb,
+            user_id=user_id,
         )
         for i, (t, emb) in enumerate(zip(chunks_text, embeddings))
     ]
@@ -603,7 +606,8 @@ async def ask_question_stream(
             results = search_documents(
                 query_embedding,
                 match_count=request.match_count,
-                match_threshold=request.match_threshold
+                match_threshold=request.match_threshold,
+                user_id=current_user["id"]
             )
 
              # 🤖 АГЕНТНАЯ ЛОГИКА: Приоритет локальной базы
@@ -748,19 +752,31 @@ async def ask_question_stream(
     )
 
 @app.post("/upload")
-async def upload_pdf(file: UploadFile = File(...)):
+async def upload_pdf(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user),
+):
     try:
-        if not file.filename.endswith('.pdf'):
+        raw_name = os.path.basename(file.filename or "")
+        if not raw_name.lower().endswith(".pdf"):
             return {"success": False, "error": "Можно загружать только PDF файлы"}
-        
-        file_path = os.path.join(UPLOAD_DIR, file.filename)
+
+        storage_name = f"{uuid.uuid4().hex}.pdf"
+        file_path = os.path.join(UPLOAD_DIR, storage_name)
+
+        MAX_UPLOAD_SIZE = 100 * 1024 * 1024
+        size = 0
         with open(file_path, "wb") as f:
-            content = await file.read()
-            f.write(content)
-        
-        log.info(f"Загружен файл: {file.filename} ({len(content)} байт)")
-        
-        result = process_pdf(file_path, file.filename)
+            while chunk := await file.read(1024 * 1024):
+                size += len(chunk)
+                if size > MAX_UPLOAD_SIZE:
+                    break
+                f.write(chunk)
+        if size > MAX_UPLOAD_SIZE:
+            os.remove(file_path)
+            return {"success": False, "error": "Файл слишком большой (макс. 100 МБ)"}
+
+        result = process_pdf(file_path, raw_name, storage_name, current_user["id"])
         
         if result["success"]:
             log.info(f"✓ Файл {file.filename} обработан: {result['chunks']} чанков")
