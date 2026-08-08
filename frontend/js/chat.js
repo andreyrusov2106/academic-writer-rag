@@ -632,7 +632,7 @@ async function uploadPdf(file) {
     }
     
     try {
-        const response = await fetch(`${API_URL}/upload-pdf`, {
+        const response = await fetch(`${API_URL}/upload`, {
             method: 'POST',
             headers: getAuthHeaders(),
             body: formData
