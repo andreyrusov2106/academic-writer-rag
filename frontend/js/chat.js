@@ -632,9 +632,15 @@ async function uploadPdf(file) {
     }
     
     try {
+        // For FormData, do NOT set Content-Type manually.
+        // Browser will set multipart/form-data with correct boundary.
+        // If we force application/json, backend sees empty body → 422.
+        const headers = {};
+        if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+        
         const response = await fetch(`${API_URL}/upload`, {
             method: 'POST',
-            headers: getAuthHeaders(),
+            headers: headers,
             body: formData
         });
         
@@ -652,6 +658,12 @@ async function uploadPdf(file) {
         }
         
         const result = await response.json();
+        
+        // Backend returns HTTP 200 + {success: false, error: "..."} on processing errors.
+        // Without this check, frontend shows "success" even when parsing fails.
+        if (!result.success) {
+            throw new Error(result.error || 'Сервер не смог обработать файл');
+        }
         
         // Очищаем зону загрузки
         const dropZone = document.getElementById('drop-zone');

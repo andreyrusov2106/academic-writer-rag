@@ -1,1 +1,12 @@
-Nothing should be ignored based on the provided file changes. The only modified file is a JavaScript source file (`frontend/js/chat.js`), which should not be added to .gitignore.
+```gitignore
+# Dependencies
+node_modules/
+
+# Editors
+.vscode/
+
+# Environment
+.env
+.env.local
+*.env.*
+```
