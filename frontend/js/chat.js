@@ -289,13 +289,13 @@ async function sendChat() {
                             sourcesHtml = '<div style="margin-top:10px;padding-top:10px;border-top:1px solid #ccc;font-size:12px;"><strong>📚 Источники:</strong><br>';
                             data.sources.forEach((source, index) => {
                                 const sim = (data.similarity_scores[index] * 100).toFixed(1);
-                                const escT = source.title.replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/\n/g, ' ');
-                                const escTx = source.chunk_text.replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/\n/g, ' ').substring(0, 300);
+                                const escT = escapeHtml(source.title).replace(/\n/g, ' ');
+                                const escTx = escapeHtml(source.chunk_text).substring(0, 300).replace(/\n/g, ' ');
                                 const isOn = source.is_online || source.title.includes('🌐');
                                 const doi = source.article_url ? `https://doi.org/${source.article_url}` : '';
                                 sourcesHtml += `<div class="source-item" style="${isOn ? 'border-left-color: #4caf50;' : ''}">`;
                                 sourcesHtml += `<button class="insert-cite-btn" onclick="insertCitation('${escT}', '${escTx}')"> Вставить</button>`;
-                                sourcesHtml += `<strong>[${index + 1}] ${source.title}</strong>`;
+                                sourcesHtml += `<strong>[${index + 1}] ${escapeHtml(source.title)}</strong>`;
                                 sourcesHtml += isOn ? ` <span style="background:#e8f5e9;color:#2e7d32;padding:2px 6px;border-radius:4px;font-size:10px;">ONLINE</span>` : ` <span style="color:#999;font-size:11px;">(${sim}%)</span>`;
                                 sourcesHtml += `<br><em>${source.chunk_text.substring(0, 200)}...</em><br>`;
                                 if (isOn && doi) sourcesHtml += `<a href="${doi}" target="_blank" style="color:#667eea;font-size:12px;"> Открыть (DOI)</a>`;
