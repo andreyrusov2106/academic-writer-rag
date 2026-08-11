@@ -15,8 +15,7 @@ function initEditor() {
 				[{ 'align': [] }],
 				['blockquote', 'code-block'],
 				['link', 'image'],
-				['clean'],
-				[{ 'voice': true }]  // ← Добавляем кнопку голоса
+				['clean']
 			]
         }
     });
@@ -171,22 +170,6 @@ function loadTheme() {
         }, 100);
     }
 }
-
-// Регистрация кастомной кнопки микрофона в Quill
-const VoiceButton = Quill.import('ui/button');
-
-class VoiceEditorButton extends VoiceButton {
-    constructor(quill, options) {
-        super(quill, options);
-        this.quill = quill;
-    }
-    
-    handleClick() {
-        toggleEditorVoice();
-    }
-}
-
-Quill.register('modules/voiceButton', VoiceEditorButton);
 
 // Экспорт функций в глобальную область видимости для использования в HTML
 window.generateTOC = generateTOC;
