@@ -421,6 +421,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (targetElement) {
                 targetElement.classList.add('active');
             }
+
+            // Загружаем список источников при открытии вкладки
+            if (targetTab === 'sources') {
+                loadDocuments();
+            }
         });
     });
 });
@@ -697,12 +702,104 @@ async function uploadPdf(file) {
         }
         
         alert(`Файл "${file.name}" успешно загружен!`);
-        
+
+        // Обновляем список источников
+        loadDocuments();
+
     } catch (error) {
         console.error('Ошибка загрузки PDF:', error);
         if (sourcesList) {
             sourcesList.innerHTML = `<div class="chat-message bot" style="color: red;">Ошибка: ${error.message}</div>`;
         }
         alert('Ошибка при загрузке файла');
+    }
+}
+
+// ═══════════════════════════════════════════════════════════
+// УПРАВЛЕНИЕ ИСТОЧНИКАМИ ("Мои источники")
+// ═══════════════════════════════════════════════════════════
+
+async function loadDocuments() {
+    if (!authToken) return;
+
+    const sourcesList = document.getElementById('sources-list');
+    if (!sourcesList) return;
+
+    try {
+        const res = await fetch(`${API_URL}/documents`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+
+        if (!res.ok) {
+            sourcesList.innerHTML = '<div style="color:#999;font-size:13px;">Нет загруженных источников</div>';
+            return;
+        }
+
+        const data = await res.json();
+        const docs = data.documents || [];
+
+        if (docs.length === 0) {
+            sourcesList.innerHTML = '<div style="color:#999;font-size:13px;">Нет загруженных источников</div>';
+            return;
+        }
+
+        // Сохраняем upload-area (если она есть)
+        const uploadArea = document.getElementById('upload-area');
+        let html = '';
+        if (uploadArea) html = uploadArea.outerHTML;
+
+        html += '<div class="my-sources-section"><h4 style="margin:10px 0;font-size:14px;color:var(--text-main);">📂 Мои источники</h4>';
+
+        docs.forEach(doc => {
+            const safeTitle = escapeHtml(doc.title);
+            const safeUrl = escapeHtml(doc.article_url);
+            html += `<div class="doc-item">
+                <div class="doc-info">
+                    <strong>${safeTitle}</strong>
+                    <span class="doc-chunks">${doc.chunks} чанков</span>
+                </div>
+                <button class="doc-delete-btn" onclick="deleteDocument('${safeUrl}')" title="Удалить">🗑 Удалить</button>
+            </div>`;
+        });
+
+        html += '</div>';
+        sourcesList.innerHTML = html;
+
+        // Восстанавливаем обработчики для upload-area
+        const newDropZone = document.getElementById('drop-zone');
+        const newPdfInput = document.getElementById('pdf-input');
+        if (newDropZone && newPdfInput) {
+            newDropZone.addEventListener('dragover', handleDragOver);
+            newDropZone.addEventListener('dragleave', () => newDropZone.classList.remove('dragover'));
+            newDropZone.addEventListener('drop', handleDrop);
+            newDropZone.addEventListener('click', () => newPdfInput.click());
+            newPdfInput.addEventListener('change', handleFileSelect);
+        }
+    } catch (e) {
+        console.error('Ошибка загрузки документов:', e);
+        sourcesList.innerHTML = '<div style="color:#e74c3c;font-size:13px;">Ошибка загрузки списка</div>';
+    }
+}
+
+async function deleteDocument(articleUrl) {
+    if (!confirm('Удалить этот документ и все его чанки?')) return;
+    if (!authToken) return;
+
+    try {
+        const res = await fetch(`${API_URL}/documents?article_url=${encodeURIComponent(articleUrl)}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.detail || 'Ошибка удаления');
+        }
+
+        const data = await res.json();
+        alert(`Удалено чанков: ${data.deleted_chunks}`);
+        loadDocuments(); // Обновляем список
+    } catch (e) {
+        alert(`Ошибка: ${e.message}`);
     }
 }

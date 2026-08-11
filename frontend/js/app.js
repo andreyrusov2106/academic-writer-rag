@@ -2,6 +2,31 @@
 // ГЛАВНЫЙ ФАЙЛ (ИНИЦИАЛИЗАЦИЯ)
 // ═══════════════════════════════════════════════════════════
 
+async function checkApiStatus() {
+    try {
+        const res = await fetch(`${API_URL}/health`);
+        const data = await res.json();
+        const badge = document.getElementById('api-status-badge');
+        if (badge) {
+            if (data.status === 'healthy') {
+                badge.textContent = 'API: онлайн';
+                badge.className = 'api-status-badge online';
+            } else {
+                badge.textContent = 'API: офлайн';
+                badge.className = 'api-status-badge offline';
+            }
+        }
+        console.info('API online', data.status);
+    } catch (e) {
+        const badge = document.getElementById('api-status-badge');
+        if (badge) {
+            badge.textContent = 'API: офлайн';
+            badge.className = 'api-status-badge offline';
+        }
+        console.warn('API check failed:', e.message);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     // Инициализация редактора
     initEditor();

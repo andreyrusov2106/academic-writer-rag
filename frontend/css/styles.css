@@ -453,6 +453,57 @@ body {
     margin: 0;
 }
 
+/* "Мои источники" — список документов */
+.my-sources-section {
+    margin-top: 12px;
+}
+.doc-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-container);
+    padding: 10px 12px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    border: 1px solid var(--border-light);
+    transition: background 0.2s;
+}
+.doc-item:hover {
+    background: var(--primary-light);
+}
+.doc-info {
+    flex: 1;
+    min-width: 0;
+}
+.doc-info strong {
+    display: block;
+    font-size: 13px;
+    color: var(--text-main);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.doc-chunks {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+.doc-delete-btn {
+    flex-shrink: 0;
+    margin-left: 10px;
+    padding: 5px 10px;
+    background: var(--danger-light);
+    color: var(--danger);
+    border: 1px solid var(--danger);
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.doc-delete-btn:hover {
+    background: var(--danger);
+    color: white;
+}
+
 /* ═══════════════════════════════════════════════════════════
    ФОРМАТИРОВАНИЕ ГОСТ
    ═══════════════════════════════════════════════════════════ */
@@ -1045,6 +1096,25 @@ display: block;
 }
 #theme-toggle-btn {
 font-size: 0;
+}
+/* API status badge */
+.api-status-badge {
+font-size: 12px;
+padding: 4px 10px;
+border-radius: 12px;
+font-weight: 600;
+letter-spacing: 0.3px;
+white-space: nowrap;
+}
+.api-status-badge.online {
+background-color: rgba(39, 174, 96, 0.2);
+color: #2ecc71;
+border: 1px solid rgba(39, 174, 96, 0.4);
+}
+.api-status-badge.offline {
+background-color: rgba(231, 76, 60, 0.2);
+color: #e74c3c;
+border: 1px solid rgba(231, 76, 60, 0.4);
 }
 #lang-toggle-text {
 font-size: 13px;
