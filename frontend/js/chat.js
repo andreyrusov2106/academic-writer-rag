@@ -297,7 +297,7 @@ async function sendChat() {
                                 sourcesHtml += `<button class="insert-cite-btn" onclick="insertCitation('${escT}', '${escTx}')"> Вставить</button>`;
                                 sourcesHtml += `<strong>[${index + 1}] ${escapeHtml(source.title)}</strong>`;
                                 sourcesHtml += isOn ? ` <span style="background:#e8f5e9;color:#2e7d32;padding:2px 6px;border-radius:4px;font-size:10px;">ONLINE</span>` : ` <span style="color:#999;font-size:11px;">(${sim}%)</span>`;
-                                sourcesHtml += `<br><em>${source.chunk_text.substring(0, 200)}...</em><br>`;
+                                sourcesHtml += `<br><em>${escapeHtml(source.chunk_text).substring(0, 200)}...</em><br>`;
                                 if (isOn && doi) sourcesHtml += `<a href="${doi}" target="_blank" style="color:#667eea;font-size:12px;"> Открыть (DOI)</a>`;
                                 sourcesHtml += `</div>`;
                             });
