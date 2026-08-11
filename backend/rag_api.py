@@ -911,6 +911,88 @@ async def health_check():
         }
 
 # ═══════════════════════════════════════════════════════════
+# УПРАВЛЕНИЕ ДОКУМЕНТАМИ ПОЛЬЗОВАТЕЛЯ
+# ═══════════════════════════════════════════════════════════
+
+class DeleteDocumentRequest(BaseModel):
+    article_url: str
+
+@app.get("/documents")
+async def list_documents(current_user: dict = Depends(get_current_user)):
+    """Возвращает список документов текущего пользователя, сгруппированный по article_url."""
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT article_url, title, COUNT(*) AS chunks
+                FROM documents
+                WHERE user_id = %s
+                GROUP BY article_url, title
+                ORDER BY title
+                """,
+                (current_user["id"],)
+            )
+            rows = cur.fetchall()
+        conn.close()
+
+        documents = [
+            {"article_url": r[0], "title": r[1], "chunks": r[2]}
+            for r in rows
+        ]
+        return {"documents": documents}
+    except Exception as e:
+        log.error(f"Ошибка получения документов: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/documents")
+async def delete_document(
+    request: DeleteDocumentRequest = None,
+    article_url: str = None,
+    current_user: dict = Depends(get_current_user),
+):
+    """Удаляет все чанки текущего пользователя для указанного article_url."""
+    target_url = None
+    if request and request.article_url:
+        target_url = request.article_url
+    elif article_url:
+        target_url = article_url
+
+    if not target_url:
+        raise HTTPException(status_code=400, detail="Не указан article_url")
+
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cur:
+            cur.execute(
+                "DELETE FROM documents WHERE user_id = %s AND article_url = %s",
+                (current_user["id"], target_url),
+            )
+            deleted_count = cur.rowcount
+        conn.commit()
+        conn.close()
+
+        if deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Документ не найден или нет прав на удаление")
+
+        # Удаляем файл с диска, если существует
+        file_path = os.path.join(UPLOAD_DIR, target_url)
+        if os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+            except Exception:
+                pass
+
+        log.info(f"Удалён документ {target_url}, чанков: {deleted_count}, пользователь: {current_user['email']}")
+        return {"success": True, "deleted_chunks": deleted_count}
+    except HTTPException:
+        raise
+    except Exception as e:
+        log.error(f"Ошибка удаления документа: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ═══════════════════════════════════════════════════════════
 # ЗАПУСК
 # ═══════════════════════════════════════════════════════════
 if __name__ == "__main__":
