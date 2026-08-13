@@ -278,18 +278,33 @@ def try_reserve_request(user_id: int):
 
 
 def refund_request(user_id: int):
-    """Возвращает зарезервированный слот, если AI-запрос не был завершён успешно."""
+    """Возвращает зарезервированный слот, если AI-запрос не был завершён успешно.
+
+    Декремент выполняется в транзакции с блокировкой строки (SELECT ... FOR UPDATE):
+    это сериализует возврат слота с параллельными reserve/refund этого же
+    пользователя, поэтому декремент не теряется и не пересекается с чужим
+    инкрементом. GREATEST(...) не даёт счётчику уйти ниже нуля.
+    """
+    conn = None
     try:
         conn = get_db_connection()
         with conn.cursor() as cur:
+            cur.execute(
+                "SELECT requests_used FROM users WHERE id = %s FOR UPDATE",
+                (user_id,),
+            )
             cur.execute(
                 "UPDATE users SET requests_used = GREATEST(requests_used - 1, 0) WHERE id = %s",
                 (user_id,),
             )
         conn.commit()
-        conn.close()
     except Exception as e:
+        if conn is not None:
+            conn.rollback()
         log.error(f"Ошибка возврата слота запроса: {e}")
+    finally:
+        if conn is not None:
+            conn.close()
 
 def get_db_connection():
     ssl_mode = 'require' if DB_HOST not in ['127.0.0.1', 'localhost', 'db'] else None
