@@ -20,8 +20,16 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr
 
+# Загружаем переменные из .env ДО чтения настроек (иначе SECRET_KEY окажется пустым).
+load_dotenv()
+
 # --- НАСТРОЙКИ БЕЗОПАСНОСТИ ---
 SECRET_KEY = os.getenv("SECRET_KEY", "").strip()
+if not SECRET_KEY:
+    raise RuntimeError(
+        "SECRET_KEY не задан. Установите переменную окружения SECRET_KEY "
+        "(или задайте её в backend/.env) перед запуском приложения."
+    )
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7 # Токен живет 7 дней
 
@@ -44,7 +52,6 @@ class Token(BaseModel):
     requests_used: int = 0      # ✅ Добавлено
     requests_limit: int = 0     # ✅ Добавлено
 
-load_dotenv()
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger(__name__)
 

@@ -9,6 +9,7 @@
   - слот возвращается, если AI-запрос не был завершён успешно.
 """
 
+import os
 import sys
 import threading
 import types
@@ -32,6 +33,10 @@ if "sentence_transformers" not in sys.modules:
     _st_module = types.ModuleType("sentence_transformers")
     _st_module.SentenceTransformer = mock.MagicMock(return_value=_stub)
     sys.modules["sentence_transformers"] = _st_module
+
+# Без SECRET_KEY импорт rag_api падает с RuntimeError (fail-fast при старте).
+# Для остальных тестов задаём тестовый ключ ДО импорта модуля.
+os.environ.setdefault("SECRET_KEY", "test-secret-key")
 
 import rag_api  # noqa: E402
 from rag_api import app  # noqa: E402
@@ -288,3 +293,31 @@ def test_user_within_limit_can_request(client, as_free_user, monkeypatch):
     assert '"done"' in resp.text
     # Ничего не найдено => AI-запрос не выполнен => слот возвращён
     assert refund_log == [FREE_USER["id"]]
+
+
+def test_missing_secret_key_fails_fast():
+    """Без SECRET_KEY приложение должно завершаться с понятной ошибкой при старте.
+
+    Проверяется в изолированном подпроцессе: в нём SECRET_KEY убран из окружения,
+    а .env отсутствует, поэтому импорт rag_api обязан упасть с RuntimeError.
+    """
+    import subprocess
+
+    code = (
+        "import sys, types\n"
+        "from unittest import mock\n"
+        f"sys.path.insert(0, {str(BACKEND_DIR)!r})\n"
+        "_st = types.ModuleType('sentence_transformers')\n"
+        "_st.SentenceTransformer = mock.MagicMock()\n"
+        "sys.modules['sentence_transformers'] = _st\n"
+        "import rag_api\n"
+    )
+    env = {k: v for k, v in os.environ.items() if k != "SECRET_KEY"}
+    proc = subprocess.run(
+        [sys.executable, "-c", code],
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    assert proc.returncode != 0, proc.stdout
+    assert "SECRET_KEY" in proc.stderr
