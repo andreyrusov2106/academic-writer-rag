@@ -204,6 +204,34 @@ def test_concurrent_requests_do_not_exceed_limit(monkeypatch):
     assert db.used == LIMIT
 
 
+def test_concurrent_refunds_return_reserved_slots(monkeypatch):
+    """Параллельные refund возвращают каждый зарезервированный слот ровно один раз."""
+    RESERVED = 20
+    db, _ = _use_fake_db(monkeypatch, used=RESERVED, limit=RESERVED)
+
+    threads = [threading.Thread(target=rag_api.refund_request, args=(1,)) for _ in range(RESERVED)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    # Если бы декремент терялся из-за гонки (read-modify-write), счётчик остался бы > 0.
+    assert db.used == 0
+
+
+def test_concurrent_refunds_never_go_below_zero(monkeypatch):
+    """Параллельные refund при избытке не уводят счётчик ниже нуля."""
+    db, _ = _use_fake_db(monkeypatch, used=3, limit=10)
+
+    threads = [threading.Thread(target=rag_api.refund_request, args=(1,)) for _ in range(20)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    assert db.used == 0
+
+
 # ─────────────────────────────────────────────────────────────
 # Тесты эндпоинтов
 # ─────────────────────────────────────────────────────────────
