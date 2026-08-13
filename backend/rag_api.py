@@ -222,12 +222,12 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
 
 # --- ФУНКЦИИ БД ДЛЯ АВТОРИЗАЦИИ ---
 def get_user_by_email(email: str):
+    conn = None
     try:
         conn = get_db_connection()
         with conn.cursor() as cur:
             cur.execute("SELECT id, email, hashed_password, subscription_type, requests_used, requests_limit FROM users WHERE email = %s", (email,))
             user = cur.fetchone()
-            conn.close()
             if user:
                 return {
                     "id": user[0], "email": user[1], "hashed_password": user[2],
@@ -237,22 +237,28 @@ def get_user_by_email(email: str):
     except Exception as e:
         log.error(f"Ошибка получения юзера: {e}")
         return None
+    finally:
+        if conn is not None:
+            conn.close()
 
 def create_user_in_db(email: str, hashed_password: str):
+    conn = None
     try:
         conn = get_db_connection()
         with conn.cursor() as cur:
             cur.execute(
-                "INSERT INTO users (email, hashed_password) VALUES (%s, %s) RETURNING id", 
+                "INSERT INTO users (email, hashed_password) VALUES (%s, %s) RETURNING id",
                 (email, hashed_password)
             )
             user_id = cur.fetchone()[0]
             conn.commit()
-            conn.close()
             return user_id
     except Exception as e:
         log.error(f"Ошибка создания юзера: {e}")
         return None
+    finally:
+        if conn is not None:
+            conn.close()
 
 def try_reserve_request(user_id: int):
     """Атомарно резервирует слот запроса.
@@ -326,6 +332,7 @@ def get_embedding(text: str) -> list[float]:
     return embedding[0].tolist()
 
 def search_documents(query_embedding: list[float], match_count=5, match_threshold=0.2, user_id: int = None):
+    conn = None
     try:
         conn = get_db_connection()
         with conn.cursor() as cur:
@@ -337,7 +344,6 @@ def search_documents(query_embedding: list[float], match_count=5, match_threshol
                 (query_embedding, match_count, match_threshold, user_id)
             )
             results = cur.fetchall()
-        conn.close()
         return [
             {
                 "id": r[0], "title": r[1], "article_url": r[2],
@@ -348,6 +354,9 @@ def search_documents(query_embedding: list[float], match_count=5, match_threshol
     except Exception as e:
         log.error(f"Ошибка поиска: {e}")
         return []
+    finally:
+        if conn is not None:
+            conn.close()
 
 # ══════════════════════════════════════════════════════════
 # ФУНКЦИИ ОБРАБОТКИ PDF
@@ -982,12 +991,12 @@ PLACEHOLDER_CONTEXT
 
 @app.get("/health")
 async def health_check():
+    conn = None
     try:
         conn = get_db_connection()
         with conn.cursor() as cur:
             cur.execute("SELECT COUNT(*) FROM documents")
             count = cur.fetchone()[0]
-        conn.close()
         return {
             "status": "healthy",
             "database": "connected",
@@ -999,6 +1008,9 @@ async def health_check():
             "database": "disconnected",
             "error": str(e)
         }
+    finally:
+        if conn is not None:
+            conn.close()
 
 # ═══════════════════════════════════════════════════════════
 # ЗАПУСК
