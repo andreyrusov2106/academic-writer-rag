@@ -349,3 +349,95 @@ def test_missing_secret_key_fails_fast():
     )
     assert proc.returncode != 0, proc.stdout
     assert "SECRET_KEY" in proc.stderr
+
+
+# ─────────────────────────────────────────────────────────────
+# Определение лимита по тарифу (PLANS)
+# ─────────────────────────────────────────────────────────────
+def test_get_plan_requests_limit_free():
+    assert rag_api.get_plan_requests_limit("free") == 10
+
+
+def test_get_plan_requests_limit_pro():
+    assert rag_api.get_plan_requests_limit("pro") == 1000
+    assert rag_api.get_plan_requests_limit("pro") > rag_api.get_plan_requests_limit("free")
+
+
+def test_get_plan_requests_limit_unknown_falls_back_to_free():
+    assert rag_api.get_plan_requests_limit("unknown-plan") == rag_api.PLANS["free"]["requests_limit"]
+
+
+# ─────────────────────────────────────────────────────────────
+# Регистрация и применение тарифа (requests_limit из PLANS)
+# ─────────────────────────────────────────────────────────────
+class RecordingCursor:
+    """Записывает выполненный SQL и параметры, не трогая реальную БД."""
+
+    def __init__(self, conn, fetchone_value=None):
+        self.conn = conn
+        self.fetchone_value = fetchone_value
+
+    def execute(self, sql, params=None):
+        self.conn.executed.append((sql, params))
+
+    def fetchone(self):
+        return self.fetchone_value
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        return False
+
+
+class RecordingConn:
+    def __init__(self, fetchone_value=None):
+        self.executed = []
+        self.committed = False
+        self.fetchone_value = fetchone_value
+
+    def cursor(self):
+        return RecordingCursor(self, self.fetchone_value)
+
+    def commit(self):
+        self.committed = True
+
+    def rollback(self):
+        pass
+
+    def close(self):
+        pass
+
+
+def _use_recording_db(monkeypatch, fetchone_value=None):
+    conn = RecordingConn(fetchone_value)
+    monkeypatch.setattr(rag_api, "get_db_connection", lambda: conn)
+    return conn
+
+
+def test_create_user_sets_limit_from_plans(monkeypatch):
+    """При регистрации requests_limit берётся из PLANS, а не из DB default."""
+    conn = _use_recording_db(monkeypatch, fetchone_value=(42,))
+    user_id = rag_api.create_user_in_db("new@example.com", "hashed")
+
+    assert user_id == 42
+    sql, params = conn.executed[0]
+    assert "subscription_type" in sql
+    assert "requests_limit" in sql
+    assert params[2] == rag_api.DEFAULT_PLAN
+    assert params[3] == rag_api.get_plan_requests_limit(rag_api.DEFAULT_PLAN)
+    assert conn.committed
+
+
+def test_apply_subscription_updates_type_and_limit_atomically(monkeypatch):
+    """Смена тарифа обновляет subscription_type и requests_limit одной SQL-операцией."""
+    conn = _use_recording_db(monkeypatch)
+    ok = rag_api.apply_subscription(1, "pro")
+
+    assert ok is True
+    assert len(conn.executed) == 1  # один UPDATE — атомарно, без отдельного запроса
+    sql, params = conn.executed[0]
+    assert sql.strip().startswith("UPDATE users SET subscription_type")
+    assert "requests_limit" in sql
+    assert params == ("pro", rag_api.get_plan_requests_limit("pro"), 1)
+    assert conn.committed

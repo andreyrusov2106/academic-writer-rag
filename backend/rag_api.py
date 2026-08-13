@@ -74,6 +74,31 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "").strip()
 
 # ═══════════════════════════════════════════════════════════
+# ТАРИФНЫЕ ПЛАНЫ (единственный источник лимитов запросов)
+# ═══════════════════════════════════════════════════════════
+# Текущий план пользователя хранится в users.subscription_type,
+# период действия — в users.subscription_expires_at (NULL = без срока).
+# Логика reserve/refund по-прежнему читает users.requests_limit — не меняется.
+DEFAULT_PLAN = "free"
+
+PLANS = {
+    "free": {
+        "name": "Free",
+        "requests_limit": 10,
+    },
+    "pro": {
+        "name": "Pro",
+        "requests_limit": 1000,  # условно-безлимитный; уточняется при подключении оплаты
+    },
+}
+
+
+def get_plan_requests_limit(subscription_type: str) -> int:
+    """Лимит запросов для тарифа. Неизвестный тариф приравнивается к free."""
+    return PLANS.get(subscription_type, PLANS[DEFAULT_PLAN])["requests_limit"]
+
+
+# ═══════════════════════════════════════════════════════════
 # ИНИЦИАЛИЗАЦИЯ
 # ══════════════════════════════════════════════════════════
 app = FastAPI(title="RAG Agent API", version="1.0.0")
@@ -247,8 +272,9 @@ def create_user_in_db(email: str, hashed_password: str):
         conn = get_db_connection()
         with conn.cursor() as cur:
             cur.execute(
-                "INSERT INTO users (email, hashed_password) VALUES (%s, %s) RETURNING id",
-                (email, hashed_password)
+                "INSERT INTO users (email, hashed_password, subscription_type, requests_limit) "
+                "VALUES (%s, %s, %s, %s) RETURNING id",
+                (email, hashed_password, DEFAULT_PLAN, get_plan_requests_limit(DEFAULT_PLAN))
             )
             user_id = cur.fetchone()[0]
             conn.commit()
@@ -259,6 +285,35 @@ def create_user_in_db(email: str, hashed_password: str):
     finally:
         if conn is not None:
             conn.close()
+
+
+def apply_subscription(user_id: int, subscription_type: str) -> bool:
+    """Атомарно применяет тариф пользователю.
+
+    Обновляет subscription_type и requests_limit (из PLANS) одним UPDATE —
+    колонка requests_limit остаётся источником истины для try_reserve_request,
+    а PLANS — единственным местом, где задаётся значение этого лимита.
+    Возвращает True при успехе, False при ошибке.
+    """
+    conn = None
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE users SET subscription_type = %s, requests_limit = %s WHERE id = %s",
+                (subscription_type, get_plan_requests_limit(subscription_type), user_id),
+            )
+        conn.commit()
+        return True
+    except Exception as e:
+        if conn is not None:
+            conn.rollback()
+        log.error(f"Ошибка применения тарифа: {e}")
+        return False
+    finally:
+        if conn is not None:
+            conn.close()
+
 
 def try_reserve_request(user_id: int):
     """Атомарно резервирует слот запроса.
