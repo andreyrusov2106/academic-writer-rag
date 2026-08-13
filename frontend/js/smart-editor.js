@@ -120,14 +120,32 @@ window.executeSmartAction = async function executeSmartAction(action) {
         console.log('📤 Отправляю запрос на /smart-action...');
         const response = await fetch(`${API_URL}/smart-action`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify({
                 text: textToUse,  // Используем сохраненный текст
                 action: action
             })
         });
-        
+
         console.log('📥 Ответ от сервера:', response.status);
+
+        // ✅ Обрабатываем ошибки авторизации и лимита до парсинга тела ответа
+        if (response.status === 401) {
+            processing.classList.remove('visible');
+            showNotification('⚠️ Требуется авторизация. Войдите в систему.');
+            return;
+        }
+        if (response.status === 403) {
+            processing.classList.remove('visible');
+            try {
+                const errData = await response.json();
+                showNotification(`⚠️ ${errData.detail || 'Лимит запросов исчерпан'}`);
+            } catch (e) {
+                showNotification('⚠️ Лимит запросов исчерпан');
+            }
+            return;
+        }
+
         const data = await response.json();
         console.log('📦 Данные:', data);
         

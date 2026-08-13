@@ -247,15 +247,64 @@ def create_user_in_db(email: str, hashed_password: str):
         log.error(f"Ошибка создания юзера: {e}")
         return None
 
-def increment_user_requests(user_id: int):
+def try_reserve_request(user_id: int):
+    """Атомарно резервирует слот запроса.
+
+    Инкрементирует requests_used ТОЛЬКО если лимит ещё не исчерпан, одним
+    SQL-запросом. Это исключает гонку (TOCTOU), когда несколько параллельных
+    запросов у границы лимита все проходят проверку «прочитал-потом-проверил»
+    и в сумме превышают лимит.
+
+    Возвращает новое значение requests_used, либо None, если лимит достигнут.
+    """
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE users SET requests_used = requests_used + 1 "
+                "WHERE id = %s AND requests_used < requests_limit "
+                "RETURNING requests_used",
+                (user_id,),
+            )
+            row = cur.fetchone()
+        conn.commit()
+        return row[0] if row else None
+    except Exception as e:
+        conn.rollback()
+        log.error(f"Ошибка резервирования слота запроса: {e}")
+        raise
+    finally:
+        conn.close()
+
+
+def refund_request(user_id: int):
+    """Возвращает зарезервированный слот, если AI-запрос не был завершён успешно.
+
+    Декремент выполняется в транзакции с блокировкой строки (SELECT ... FOR UPDATE):
+    это сериализует возврат слота с параллельными reserve/refund этого же
+    пользователя, поэтому декремент не теряется и не пересекается с чужим
+    инкрементом. GREATEST(...) не даёт счётчику уйти ниже нуля.
+    """
+    conn = None
     try:
         conn = get_db_connection()
         with conn.cursor() as cur:
-            cur.execute("UPDATE users SET requests_used = requests_used + 1 WHERE id = %s", (user_id,))
-            conn.commit()
-            conn.close()
+            cur.execute(
+                "SELECT requests_used FROM users WHERE id = %s FOR UPDATE",
+                (user_id,),
+            )
+            cur.execute(
+                "UPDATE users SET requests_used = GREATEST(requests_used - 1, 0) WHERE id = %s",
+                (user_id,),
+            )
+        conn.commit()
     except Exception as e:
-        log.error(f"Ошибка обновления счетчика: {e}")
+        if conn is not None:
+            conn.rollback()
+        log.error(f"Ошибка возврата слота запроса: {e}")
+    finally:
+        if conn is not None:
+            conn.close()
 
 def get_db_connection():
     ssl_mode = 'require' if DB_HOST not in ['127.0.0.1', 'localhost', 'db'] else None
@@ -493,17 +542,46 @@ def ask_llm(question: str, context: str, history: list[dict], dual_language: boo
 async def root():
     return {"status": "ok", "message": "RAG Agent API работает", "version": "1.0.0"}
 
+# --- ЗАВИСИМОСТЬ ДЛЯ ПРОВЕРКИ ТОКЕНА ---
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    token = credentials.credentials
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload.get("sub")
+        user_id: int = payload.get("user_id")
+        if email is None or user_id is None:
+            raise HTTPException(status_code=401, detail="Невалидный токен")
+
+        # Проверяем, что юзер все еще есть в базе и получаем его актуальные лимиты
+        db_user = get_user_by_email(email)
+        if not db_user or db_user["id"] != user_id:
+            raise HTTPException(status_code=401, detail="Пользователь не найден")
+
+        return db_user
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Невалидный токен")
+
+
 @app.post("/ask", response_model=QueryResponse)
-async def ask_question(request: QueryRequest):
+async def ask_question(request: QueryRequest, current_user: dict = Depends(get_current_user)):
+    # ✅ АТОМАРНАЯ ПРОВЕРКА ЛИМИТА: резервируем слот одним SQL-запросом.
+    # Лимит определяется ТОЛЬКО на сервере, фронтенд-данные не используются.
+    if not try_reserve_request(current_user["id"]):
+        raise HTTPException(
+            status_code=403,
+            detail=f"Лимит запросов исчерпан. Ваш текущий тариф: {current_user['subscription_type']}. Обновите подписку."
+        )
+    success = False
     try:
         log.info(f"Получен вопрос: {request.question} (dual_language: {request.dual_language})")
         query_embedding = get_embedding(request.question)
         results = search_documents(
             query_embedding,
             match_count=request.match_count,
-            match_threshold=request.match_threshold
+            match_threshold=request.match_threshold,
+            user_id=current_user["id"]
         )
-        
+
         if not results:
             return QueryResponse(
                 answer="К сожалению, в базе знаний нет информации по этому вопросу.",
@@ -511,14 +589,14 @@ async def ask_question(request: QueryRequest):
                 sources=[],
                 similarity_scores=[]
             )
-        
+
         context = "\n\n---\n\n".join([
             f"[{i+1}] Источник: {r['title']}\n{r['chunk_text']}"
             for i, r in enumerate(results)
         ])
-        
+
         answer_dict = ask_llm(request.question, context, history=request.history, dual_language=request.dual_language)
-        
+
         sources = [
             {
                 "title": r["title"],
@@ -528,7 +606,8 @@ async def ask_question(request: QueryRequest):
             for r in results
         ]
         similarity_scores = [r["similarity"] for r in results]
-        
+
+        success = True
         return QueryResponse(
             answer=answer_dict["answer_ru"],
             answer_cn=answer_dict["answer_cn"],
@@ -538,6 +617,9 @@ async def ask_question(request: QueryRequest):
     except Exception as e:
         log.error(f"Ошибка обработки запроса: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if not success:
+            refund_request(current_user["id"])
 
 
 
@@ -570,37 +652,21 @@ async def login(user: UserLogin):
         "requests_limit": db_user["requests_limit"]      # ✅ Добавлено
     }
 
-# --- ЗАВИСИМОСТЬ ДЛЯ ПРОВЕРКИ ТОКЕНА ---
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    token = credentials.credentials
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        email: str = payload.get("sub")
-        user_id: int = payload.get("user_id")
-        if email is None or user_id is None:
-            raise HTTPException(status_code=401, detail="Невалидный токен")
-        
-        # Проверяем, что юзер все еще есть в базе и получаем его актуальные лимиты
-        db_user = get_user_by_email(email)
-        if not db_user or db_user["id"] != user_id:
-            raise HTTPException(status_code=401, detail="Пользователь не найден")
-            
-        return db_user
-    except JWTError:
-        raise HTTPException(status_code=401, detail="Невалидный токен")
-
 @app.post("/ask-stream")
 async def ask_question_stream(
-    request: QueryRequest, 
+    request: QueryRequest,
     current_user: dict = Depends(get_current_user) # ✅ Добавляем проверку токена
 ):
-    # ✅ ПРОВЕРКА ЛИМИТОВ
-    if current_user["requests_used"] >= current_user["requests_limit"]:
+    # ✅ АТОМАРНАЯ ПРОВЕРКА ЛИМИТА: резервируем слот одним SQL-запросом (защита от гонки).
+    # Лимит определяется ТОЛЬКО на сервере, данные с фронтенда не используются.
+    new_count = try_reserve_request(current_user["id"])
+    if not new_count:
         raise HTTPException(
-            status_code=403, 
+            status_code=403,
             detail=f"Лимит запросов исчерпан. Ваш текущий тариф: {current_user['subscription_type']}. Обновите подписку."
         )
     async def generate():
+        success = False
         try:
             query_embedding = get_embedding(request.question)
             results = search_documents(
@@ -732,14 +798,18 @@ async def ask_question_stream(
                         except json.JSONDecodeError:
                             continue
                             
-            increment_user_requests(current_user["id"])
-            log.info(f"✅ Запрос засчитан. Пользователь {current_user['email']}: {current_user['requests_used'] + 1}/{current_user['requests_limit']}")
-            
+            success = True
+            log.info(f"✅ Запрос засчитан. Пользователь {current_user['email']}: {new_count}/{current_user['requests_limit']}")
+
             yield f"data: {json.dumps({'type': 'done'}, ensure_ascii=False)}\n\n"
-            
+
         except Exception as e:
             log.error(f"Ошибка стриминга: {e}")
             yield f"data: {json.dumps({'type': 'error', 'content': str(e)}, ensure_ascii=False)}\n\n"
+        finally:
+            # Если AI-запрос не был завершён успешно — возвращаем зарезервированный слот.
+            if not success:
+                refund_request(current_user["id"])
 
     return StreamingResponse(
         generate(),
@@ -793,8 +863,16 @@ async def upload_pdf(
         return {"success": False, "error": str(e)}
 
 @app.post("/smart-action")
-async def smart_action(request: SmartActionRequest):
+async def smart_action(request: SmartActionRequest, current_user: dict = Depends(get_current_user)):
     """Умные действия с выделенным текстом"""
+    # ✅ АТОМАРНАЯ ПРОВЕРКА ЛИМИТА: резервируем слот одним SQL-запросом.
+    # Лимит определяется ТОЛЬКО на сервере, данные с фронтенда не используются.
+    if not try_reserve_request(current_user["id"]):
+        raise HTTPException(
+            status_code=403,
+            detail=f"Лимит запросов исчерпан. Ваш текущий тариф: {current_user['subscription_type']}. Обновите подписку."
+        )
+    success = False
     try:
         log.info(f"Smart action: {request.action}, текст: {request.text[:50]}...")
         
@@ -845,7 +923,7 @@ PLACEHOLDER_CONTEXT
         sources = []
         if request.action == 'find_sources':
             query_embedding = get_embedding(request.text)
-            search_results = search_documents(query_embedding, match_count=3, match_threshold=0.3)
+            search_results = search_documents(query_embedding, match_count=3, match_threshold=0.3, user_id=current_user["id"])
             
             if search_results:
                 context = "\n\n---\n\n".join([
@@ -884,11 +962,16 @@ PLACEHOLDER_CONTEXT
             return SmartActionResponse(result=f"⚠️ Ошибка API: {resp.status_code}", sources=sources)
         
         result = resp.json()["choices"][0]["message"]["content"]
+        success = True
         return SmartActionResponse(result=result, sources=sources)
-        
+
     except Exception as e:
         log.error(f"Ошибка smart-action: {e}")
         return SmartActionResponse(result=f"️ Ошибка: {e}", sources=[])
+    finally:
+        # Если AI-запрос не был завершён успешно — возвращаем зарезервированный слот.
+        if not success:
+            refund_request(current_user["id"])
 
 @app.get("/health")
 async def health_check():
