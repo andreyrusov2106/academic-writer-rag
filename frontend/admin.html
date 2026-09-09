@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1e3a5f">
+    <meta name="description" content="Админ-панель Academic Writer">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon_192x192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon_192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon_512x512.png">
+    <title>Админ-панель — Academic Writer</title>
+
+    <link rel="stylesheet" href="/css/styles.css">
+
+    <style>
+        /* Минимальные стили админ-панели поверх существующей темы.
+           Используются CSS-переменные из css/styles.css, поэтому
+           светлая/тёмная тема работают автоматически. */
+        .admin-main {
+            max-width: 960px;
+            margin: 24px auto;
+            padding: 0 24px;
+        }
+        .admin-section {
+            background: var(--bg-container);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: var(--shadow-sm);
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+        .admin-section h2 {
+            font-size: 16px;
+            font-weight: 600;
+            margin: 0 0 16px 0;
+            color: var(--text-main);
+        }
+        .current-user {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 13px;
+            white-space: nowrap;
+        }
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .admin-table th,
+        .admin-table td {
+            text-align: left;
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border-light);
+        }
+        .admin-table th {
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-admin {
+            background: var(--primary-light);
+            color: var(--primary-dark);
+        }
+        .badge-user {
+            background: var(--chat-bot-bg);
+            color: var(--text-muted);
+        }
+        .access-denied {
+            color: var(--danger);
+            font-weight: 600;
+        }
+        .empty {
+            color: var(--text-light);
+        }
+    </style>
+</head>
+<body>
+    <header class="app-header">
+        <div class="header-left">
+            <span class="header-logo">🛡️</span>
+            <h1 class="app-title">Админ-панель</h1>
+        </div>
+        <div class="header-right">
+            <span id="current-user" class="current-user">Администратор</span>
+            <button id="logout-btn" type="button" class="btn">Выйти</button>
+        </div>
+    </header>
+
+    <main class="admin-main">
+        <section class="admin-section">
+            <h2>Пользователи</h2>
+            <div id="users-list"></div>
+        </section>
+
+        <section class="admin-section">
+            <h2>Статьи</h2>
+            <div id="articles-list"></div>
+        </section>
+    </main>
+
+    <script src="/js/admin.js"></script>
+</body>
+</html>
