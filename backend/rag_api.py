@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -10,6 +10,7 @@ import logging
 import json
 import re
 import pdfplumber
+from collections import defaultdict
 from dataclasses import dataclass, field
 from sentence_transformers import SentenceTransformer
 from dotenv import load_dotenv
@@ -51,6 +52,8 @@ class Token(BaseModel):
     subscription_type: str
     requests_used: int = 0      # ✅ Добавлено
     requests_limit: int = 0     # ✅ Добавлено
+    is_admin: bool = False            # ✅ Источник: только БД
+    specialty_code: str | None = None # ✅ Источник: только БД
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger(__name__)
@@ -251,12 +254,13 @@ def get_user_by_email(email: str):
     try:
         conn = get_db_connection()
         with conn.cursor() as cur:
-            cur.execute("SELECT id, email, hashed_password, subscription_type, requests_used, requests_limit FROM users WHERE email = %s", (email,))
+            cur.execute("SELECT id, email, hashed_password, subscription_type, requests_used, requests_limit, is_admin, specialty_code FROM users WHERE email = %s", (email,))
             user = cur.fetchone()
             if user:
                 return {
                     "id": user[0], "email": user[1], "hashed_password": user[2],
-                    "subscription_type": user[3], "requests_used": user[4], "requests_limit": user[5]
+                    "subscription_type": user[3], "requests_used": user[4], "requests_limit": user[5],
+                    "is_admin": user[6], "specialty_code": user[7]
                 }
         return None
     except Exception as e:
@@ -386,17 +390,17 @@ def get_embedding(text: str) -> list[float]:
     embedding = embed_model.encode([text], normalize_embeddings=True)
     return embedding[0].tolist()
 
-def search_documents(query_embedding: list[float], match_count=5, match_threshold=0.2, user_id: int = None):
+def search_documents(query_embedding: list[float], match_count=5, match_threshold=0.2, user_id: int = None, specialty_code: str = None):
     conn = None
     try:
         conn = get_db_connection()
         with conn.cursor() as cur:
             cur.execute(
                 """
-                SELECT id, title, article_url, chunk_text, similarity 
-                FROM match_documents(%s::vector, %s, %s, %s)
+                SELECT id, title, article_url, chunk_text, similarity
+                FROM match_documents(%s::vector, %s, %s, %s, %s)
                 """,
-                (query_embedding, match_count, match_threshold, user_id)
+                (query_embedding, match_count, match_threshold, user_id, specialty_code)
             )
             results = cur.fetchall()
         return [
@@ -471,8 +475,16 @@ def get_embeddings(texts: list[str]) -> list[list[float]]:
     )
     return embeddings.tolist()
 
-def save_chunks_to_db(chunks: list[Chunk]) -> int:
-    conn = get_db_connection()
+def save_chunks_to_db(chunks: list[Chunk], conn=None) -> int:
+    """Сохраняет чанки в documents.
+
+    Если conn передан — пишет в существующую транзакцию, НЕ коммитит и НЕ закрывает
+    соединение (управление транзакцией остаётся у вызывающего). Иначе открывает
+    собственное соединение и коммитит (обратная совместимость с /upload).
+    """
+    own_conn = conn is None
+    if own_conn:
+        conn = get_db_connection()
     rows = [
         (c.article_url, c.title, c.chunk_index, c.text, c.embedding, c.user_id)
         for c in chunks
@@ -484,32 +496,41 @@ def save_chunks_to_db(chunks: list[Chunk]) -> int:
                     """
                     INSERT INTO documents (article_url, title, chunk_index, chunk_text, embedding, user_id)
                     VALUES (%s, %s, %s, %s, %s, %s)
-                    ON CONFLICT (article_url, chunk_index) 
+                    ON CONFLICT (article_url, chunk_index)
                     DO UPDATE SET chunk_text = EXCLUDED.chunk_text, embedding = EXCLUDED.embedding, user_id = EXCLUDED.user_id
                     """,
                     row
                 )
-        conn.commit()
+        if own_conn:
+            conn.commit()
         return len(rows)
     except Exception as e:
         log.error(f"Ошибка сохранения: {e}")
-        conn.rollback()
+        if own_conn:
+            conn.rollback()
         raise
     finally:
-        conn.close()
+        if own_conn:
+            conn.close()
 
-def process_pdf(file_path: str, display_title: str, storage_name: str, user_id: int = None) -> dict:
+def build_chunks(file_path: str, display_title: str, storage_name: str, user_id: int = None) -> tuple[list[Chunk], int]:
+    """Извлекает текст, разбивает на чанки и считает эмбеддинги БЕЗ записи в БД.
+
+    Возвращает (chunks, text_length) или бросает ValueError с понятным сообщением.
+    Выделено отдельно, чтобы административная загрузка могла записать чанки и
+    правила доступа в одну транзакцию (см. POST /admin/upload).
+    """
     raw_text = pdf_to_text(file_path)
     if not raw_text.strip():
-        return {"success": False, "error": "Не удалось извлечь текст из PDF"}
-    
+        raise ValueError("Не удалось извлечь текст из PDF")
+
     text = clean_text(raw_text)
     chunks_text = to_chunks(text)
     if not chunks_text:
-        return {"success": False, "error": "Текст слишком короткий для обработки"}
-    
+        raise ValueError("Текст слишком короткий для обработки")
+
     embeddings = get_embeddings(chunks_text)
-    
+
     chunks = [
         Chunk(
             article_url=storage_name,
@@ -521,12 +542,19 @@ def process_pdf(file_path: str, display_title: str, storage_name: str, user_id: 
         )
         for i, (t, emb) in enumerate(zip(chunks_text, embeddings))
     ]
-    
+    return chunks, len(text)
+
+def process_pdf(file_path: str, display_title: str, storage_name: str, user_id: int = None) -> dict:
+    try:
+        chunks, text_length = build_chunks(file_path, display_title, storage_name, user_id)
+    except ValueError as e:
+        return {"success": False, "error": str(e)}
+
     count = save_chunks_to_db(chunks)
     return {
         "success": True,
         "chunks": count,
-        "text_length": len(text),
+        "text_length": text_length,
         "message": f"Обработано {count} чанков"
     }
 
@@ -633,6 +661,14 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         raise HTTPException(status_code=401, detail="Невалидный токен")
 
 
+# --- ЗАВИСИМОСТЬ ДЛЯ ПРОВЕРКИ ПРАВ АДМИНИСТРАТОРА ---
+async def get_current_admin_user(current_user: dict = Depends(get_current_user)):
+    # Источник is_admin — ТОЛЬКО БД (get_current_user возвращает db_user из БД).
+    if current_user.get("is_admin") is not True:
+        raise HTTPException(status_code=403, detail="Доступ запрещён: требуются права администратора")
+    return current_user
+
+
 @app.post("/ask", response_model=QueryResponse)
 async def ask_question(request: QueryRequest, current_user: dict = Depends(get_current_user)):
     # ✅ АТОМАРНАЯ ПРОВЕРКА ЛИМИТА: резервируем слот одним SQL-запросом.
@@ -650,7 +686,8 @@ async def ask_question(request: QueryRequest, current_user: dict = Depends(get_c
             query_embedding,
             match_count=request.match_count,
             match_threshold=request.match_threshold,
-            user_id=current_user["id"]
+            user_id=current_user["id"],
+            specialty_code=current_user.get("specialty_code")
         )
 
         if not results:
@@ -720,7 +757,9 @@ async def login(user: UserLogin):
         "user_id": db_user["id"],
         "subscription_type": db_user["subscription_type"],
         "requests_used": db_user["requests_used"],       # ✅ Добавлено
-        "requests_limit": db_user["requests_limit"]      # ✅ Добавлено
+        "requests_limit": db_user["requests_limit"],     # ✅ Добавлено
+        "is_admin": db_user["is_admin"],                 # ✅ Источник: только БД
+        "specialty_code": db_user["specialty_code"]      # ✅ Источник: только БД
     }
 
 @app.post("/ask-stream")
@@ -744,7 +783,8 @@ async def ask_question_stream(
                 query_embedding,
                 match_count=request.match_count,
                 match_threshold=request.match_threshold,
-                user_id=current_user["id"]
+                user_id=current_user["id"],
+                specialty_code=current_user.get("specialty_code")
             )
 
              # 🤖 АГЕНТНАЯ ЛОГИКА: Приоритет локальной базы
@@ -994,7 +1034,7 @@ PLACEHOLDER_CONTEXT
         sources = []
         if request.action == 'find_sources':
             query_embedding = get_embedding(request.text)
-            search_results = search_documents(query_embedding, match_count=3, match_threshold=0.3, user_id=current_user["id"])
+            search_results = search_documents(query_embedding, match_count=3, match_threshold=0.3, user_id=current_user["id"], specialty_code=current_user.get("specialty_code"))
             
             if search_results:
                 context = "\n\n---\n\n".join([
@@ -1148,6 +1188,307 @@ async def delete_document(
     except Exception as e:
         log.error(f"Ошибка удаления документа: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+# ═══════════════════════════════════════════════════════════
+# ADMIN: УПРАВЛЕНИЕ ДОСТУПОМ К СТАТЬЯМ
+# ═══════════════════════════════════════════════════════════
+# Все эндпоинты под /admin/* требуют get_current_admin_user.
+# Источник is_admin — ТОЛЬКО БД (get_current_user возвращает db_user из БД).
+# Правила доступа привязаны к article_url (не к documents.id, который является
+# идентификатором отдельного чанка). Административные статьи — documents.user_id IS NULL.
+
+class AdminAccessRequest(BaseModel):
+    user_ids: list[int] = []
+    specialty_codes: list[str] = []
+
+
+def _safe_remove(file_path: str):
+    """Удаляет файл с диска, не падая при его отсутствии."""
+    if file_path and os.path.exists(file_path):
+        try:
+            os.remove(file_path)
+        except Exception:
+            pass
+
+
+def insert_access_rules(conn, article_url: str, user_ids: list[int], specialty_codes: list[str]):
+    """Вставляет правила доступа для статьи в существующую транзакцию conn."""
+    with conn.cursor() as cur:
+        for uid in user_ids:
+            cur.execute(
+                "INSERT INTO document_access_users (article_url, user_id) VALUES (%s, %s) "
+                "ON CONFLICT (article_url, user_id) DO NOTHING",
+                (article_url, uid),
+            )
+        for sc in specialty_codes:
+            cur.execute(
+                "INSERT INTO document_access_specialties (article_url, specialty_code) VALUES (%s, %s) "
+                "ON CONFLICT (article_url, specialty_code) DO NOTHING",
+                (article_url, sc),
+            )
+
+
+@app.get("/admin/users")
+async def admin_list_users(current_user: dict = Depends(get_current_admin_user)):
+    """Список пользователей (только id, email, is_admin, specialty_code — без секретов)."""
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT id, email, is_admin, specialty_code FROM users ORDER BY id"
+            )
+            rows = cur.fetchall()
+        conn.close()
+
+        return {
+            "users": [
+                {"id": r[0], "email": r[1], "is_admin": r[2], "specialty_code": r[3]}
+                for r in rows
+            ]
+        }
+    except Exception as e:
+        log.error(f"Ошибка получения списка пользователей: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/admin/articles")
+async def admin_list_articles(current_user: dict = Depends(get_current_admin_user)):
+    """Список административных статей (user_id IS NULL), сгруппированный по article_url.
+
+    Для каждой статьи возвращает число чанков, списки разрешённых пользователей и
+    специальностей, а также флаг global (нет ни одного правила -> доступ всем).
+    """
+    try:
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT article_url, title, COUNT(*) AS chunks
+                    FROM documents
+                    WHERE user_id IS NULL
+                    GROUP BY article_url, title
+                    ORDER BY title
+                    """
+                )
+                article_rows = cur.fetchall()
+
+                cur.execute(
+                    "SELECT article_url, user_id FROM document_access_users ORDER BY article_url, user_id"
+                )
+                user_access_rows = cur.fetchall()
+
+                cur.execute(
+                    "SELECT article_url, specialty_code FROM document_access_specialties ORDER BY article_url, specialty_code"
+                )
+                specialty_access_rows = cur.fetchall()
+        finally:
+            conn.close()
+
+        users_by_url: dict[str, list[int]] = defaultdict(list)
+        for url, uid in user_access_rows:
+            users_by_url[url].append(uid)
+
+        specialties_by_url: dict[str, list[str]] = defaultdict(list)
+        for url, sc in specialty_access_rows:
+            specialties_by_url[url].append(sc)
+
+        articles = []
+        for article_url, title, chunks in article_rows:
+            allowed_users = users_by_url.get(article_url, [])
+            allowed_specialties = specialties_by_url.get(article_url, [])
+            articles.append({
+                "article_url": article_url,
+                "title": title,
+                "chunks": chunks,
+                "allowed_user_ids": allowed_users,
+                "allowed_specialty_codes": allowed_specialties,
+                "global": len(allowed_users) == 0 and len(allowed_specialties) == 0,
+            })
+        return {"articles": articles}
+    except Exception as e:
+        log.error(f"Ошибка получения административных статей: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/admin/upload")
+async def admin_upload_pdf(
+    file: UploadFile = File(...),
+    users: str = Form(None),
+    specialties: str = Form(None),
+    current_user: dict = Depends(get_current_admin_user),
+):
+    """Загрузка административной статьи (user_id IS NULL) с правилами доступа.
+
+    Multipart: файл PDF + необязательные JSON-массивы `users` (id пользователей)
+    и `specialties` (коды специальностей). Пустые оба списка -> глобальный доступ.
+    Чанки и правила доступа записываются в ОДНУ транзакцию (атомарно): при любой
+    ошибке в БД не остаётся частично созданной статьи.
+    """
+    storage_name = None
+    file_path = None
+    try:
+        # ── Разбор правил доступа из JSON-строк ──
+        try:
+            user_ids = json.loads(users) if users else []
+            specialty_codes = json.loads(specialties) if specialties else []
+        except (json.JSONDecodeError, ValueError):
+            return {"success": False, "error": "users/specialties должны быть валидными JSON-массивами"}
+        if not isinstance(user_ids, list) or not all(isinstance(x, int) for x in user_ids):
+            return {"success": False, "error": "users должен быть JSON-массивом целых чисел (user_id)"}
+        if not isinstance(specialty_codes, list) or not all(isinstance(x, str) for x in specialty_codes):
+            return {"success": False, "error": "specialties должен быть JSON-массивом строк (specialty_code)"}
+
+        # ── Проверка и сохранение PDF (имя генерируется, а не берётся из файла) ──
+        raw_name = os.path.basename(file.filename or "")
+        if not raw_name.lower().endswith(".pdf"):
+            return {"success": False, "error": "Можно загружать только PDF файлы"}
+
+        storage_name = f"{uuid.uuid4().hex}.pdf"
+        file_path = os.path.join(UPLOAD_DIR, storage_name)
+
+        MAX_UPLOAD_SIZE = 100 * 1024 * 1024
+        size = 0
+        with open(file_path, "wb") as f:
+            while chunk := await file.read(1024 * 1024):
+                size += len(chunk)
+                if size > MAX_UPLOAD_SIZE:
+                    break
+                f.write(chunk)
+        if size > MAX_UPLOAD_SIZE:
+            _safe_remove(file_path)
+            return {"success": False, "error": "Файл слишком большой (макс. 100 МБ)"}
+
+        # ── Извлечение текста и эмбеддингов ДО записи в БД ──
+        try:
+            chunks, text_length = build_chunks(file_path, raw_name, storage_name, user_id=None)
+        except ValueError as e:
+            _safe_remove(file_path)
+            return {"success": False, "error": str(e)}
+
+        # ── Атомарно: чанки + правила доступа в одной транзакции ──
+        conn = get_db_connection()
+        try:
+            save_chunks_to_db(chunks, conn=conn)
+            insert_access_rules(conn, storage_name, user_ids, specialty_codes)
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+        log.info(
+            f"✓ Администратор загрузил статью {raw_name}: {len(chunks)} чанков, "
+            f"пользователей: {len(user_ids)}, специальностей: {len(specialty_codes)}"
+        )
+        return {
+            "success": True,
+            "message": "Статья успешно загружена и обработана",
+            "article_url": storage_name,
+            "chunks": len(chunks),
+            "text_length": text_length,
+            "global": len(user_ids) == 0 and len(specialty_codes) == 0,
+        }
+    except Exception as e:
+        log.error(f"Ошибка загрузки статьи администратором: {e}")
+        _safe_remove(file_path)
+        return {"success": False, "error": str(e)}
+
+
+@app.put("/admin/articles/{article_url}/access")
+async def admin_set_article_access(
+    article_url: str,
+    request: AdminAccessRequest,
+    current_user: dict = Depends(get_current_admin_user),
+):
+    """Заменяет правила доступа административной статьи (семантика REPLACE).
+
+    Существующие правила удаляются, вставляются новые. Пустые оба списка -> global.
+    Статья должна существовать и быть административной (user_id IS NULL); иначе 404
+    (факт существования пользовательского документа не раскрывается).
+    """
+    conn = None
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT COUNT(*) FROM documents WHERE article_url = %s AND user_id IS NULL",
+                (article_url,),
+            )
+            if cur.fetchone()[0] == 0:
+                raise HTTPException(status_code=404, detail="Статья не найдена")
+
+            cur.execute("DELETE FROM document_access_users WHERE article_url = %s", (article_url,))
+            cur.execute("DELETE FROM document_access_specialties WHERE article_url = %s", (article_url,))
+
+        insert_access_rules(conn, article_url, request.user_ids, request.specialty_codes)
+        conn.commit()
+
+        return {
+            "success": True,
+            "article_url": article_url,
+            "user_ids": request.user_ids,
+            "specialty_codes": request.specialty_codes,
+            "global": len(request.user_ids) == 0 and len(request.specialty_codes) == 0,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        if conn is not None:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+        log.error(f"Ошибка обновления доступа к статье: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if conn is not None:
+            conn.close()
+
+
+@app.delete("/admin/articles/{article_url}")
+async def admin_delete_article(article_url: str, current_user: dict = Depends(get_current_admin_user)):
+    """Удаляет административную статью (user_id IS NULL) целиком.
+
+    Удаляет чанки из documents, все правила доступа и физический PDF. Пользовательский
+    документ (user_id NOT NULL) не удаляется и скрывается за 404.
+    """
+    conn = None
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT COUNT(*) FROM documents WHERE article_url = %s AND user_id IS NULL",
+                (article_url,),
+            )
+            if cur.fetchone()[0] == 0:
+                raise HTTPException(status_code=404, detail="Статья не найдена")
+
+            cur.execute("DELETE FROM document_access_users WHERE article_url = %s", (article_url,))
+            cur.execute("DELETE FROM document_access_specialties WHERE article_url = %s", (article_url,))
+            cur.execute("DELETE FROM documents WHERE article_url = %s AND user_id IS NULL", (article_url,))
+            deleted_chunks = cur.rowcount
+        conn.commit()
+
+        _safe_remove(os.path.join(UPLOAD_DIR, article_url))
+
+        log.info(f"Администратор удалил статью {article_url}, чанков: {deleted_chunks}")
+        return {"success": True, "deleted_chunks": deleted_chunks}
+    except HTTPException:
+        raise
+    except Exception as e:
+        if conn is not None:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+        log.error(f"Ошибка удаления статьи администратором: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if conn is not None:
+            conn.close()
+
 
 # ═══════════════════════════════════════════════════════════
 # ЗАПУСК
