@@ -207,6 +207,103 @@ def test_admin_users_returns_only_safe_fields(client, as_admin, monkeypatch):
 
 
 # ─────────────────────────────────────────────────────────────
+# 2.1 PUT /admin/users/{user_id} — изменение is_admin / specialty_code
+# ─────────────────────────────────────────────────────────────
+def _update_respond(updated_row):
+    """Хелпер respond-обработчика для PUT /admin/users/{user_id}."""
+    def respond(sql, params):
+        if "SELECT id, email, is_admin, specialty_code" in sql:
+            return [updated_row]
+        if "SELECT id FROM users" in sql:
+            return [(updated_row[0],)]
+        return None
+    return respond
+
+
+def test_admin_update_specialty_code(client, as_admin, monkeypatch):
+    # Админ меняет только specialty_code пользователя.
+    conn = _use_fake_conn(
+        monkeypatch,
+        _update_respond((2, "user@example.com", False, "5.8.2")),
+    )
+    resp = client.put("/admin/users/2", json={"specialty_code": "5.8.2"})
+
+    assert resp.status_code == 200
+    assert resp.json() == {
+        "id": 2,
+        "email": "user@example.com",
+        "is_admin": False,
+        "specialty_code": "5.8.2",
+    }
+
+    # Независимое обновление: только specialty_code, is_admin не трогается.
+    update_sql, update_params = next((s, p) for s, p in conn.executed if "UPDATE users SET" in s)
+    assert "specialty_code = %s" in update_sql
+    assert "is_admin" not in update_sql
+    assert update_params == ("5.8.2", 2)
+    assert conn.committed
+
+
+def test_admin_update_is_admin(client, as_admin, monkeypatch):
+    # Админ меняет только is_admin пользователя.
+    conn = _use_fake_conn(
+        monkeypatch,
+        _update_respond((2, "user@example.com", True, "5.8.1")),
+    )
+    resp = client.put("/admin/users/2", json={"is_admin": True})
+
+    assert resp.status_code == 200
+    assert resp.json() == {
+        "id": 2,
+        "email": "user@example.com",
+        "is_admin": True,
+        "specialty_code": "5.8.1",
+    }
+
+    update_sql, update_params = next((s, p) for s, p in conn.executed if "UPDATE users SET" in s)
+    assert "is_admin = %s" in update_sql
+    assert "specialty_code" not in update_sql
+    assert update_params == (True, 2)
+
+
+def test_admin_update_empty_specialty_code_clears(client, as_admin, monkeypatch):
+    # Пустая строка specialty_code трактуется как null (снятие специальности).
+    conn = _use_fake_conn(
+        monkeypatch,
+        _update_respond((2, "user@example.com", False, None)),
+    )
+    resp = client.put("/admin/users/2", json={"specialty_code": ""})
+
+    assert resp.status_code == 200
+    assert resp.json()["specialty_code"] is None
+    update_sql, update_params = next((s, p) for s, p in conn.executed if "UPDATE users SET" in s)
+    assert update_params == (None, 2)
+
+
+def test_admin_update_requires_admin(client, as_non_admin):
+    resp = client.put("/admin/users/2", json={"is_admin": True})
+    assert resp.status_code == 403
+
+
+def test_admin_update_nonexistent_user_404(client, as_admin, monkeypatch):
+    def respond(sql, params):
+        if "SELECT id FROM users" in sql:
+            return []  # пользователя не существует
+        return None
+
+    _use_fake_conn(monkeypatch, respond)
+    resp = client.put("/admin/users/999", json={"is_admin": True})
+    assert resp.status_code == 404
+
+
+def test_admin_cannot_remove_own_admin(client, as_admin):
+    # Администратор не может снять is_admin с самого себя (id=1 — текущий админ).
+    resp = client.put("/admin/users/1", json={"is_admin": False})
+    assert resp.status_code == 400
+    assert "себя" in resp.json()["detail"]
+
+
+# ─────────────────────────────────────────────────────────────
 # 3. GET /admin/articles — global и правила доступа
 # ─────────────────────────────────────────────────────────────
 def test_admin_articles_global_when_no_rules(client, as_admin, monkeypatch):

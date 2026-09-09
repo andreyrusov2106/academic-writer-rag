@@ -78,6 +78,41 @@
         .empty {
             color: var(--text-light);
         }
+        .admin-checkbox {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            vertical-align: middle;
+        }
+        .admin-input {
+            padding: 6px 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--bg-container);
+            color: var(--text-main);
+            font-size: 13px;
+            width: 100%;
+            max-width: 160px;
+            box-sizing: border-box;
+        }
+        .save-btn {
+            padding: 6px 12px;
+            font-size: 13px;
+        }
+        .save-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .row-status {
+            font-size: 12px;
+            margin-left: 8px;
+        }
+        .row-status.ok {
+            color: #16a34a;
+        }
+        .row-status.err {
+            color: var(--danger);
+        }
     </style>
 </head>
 <body>

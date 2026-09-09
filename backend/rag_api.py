@@ -19,7 +19,7 @@ from jose import JWTError, jwt
 import bcrypt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 
 # Загружаем переменные из .env ДО чтения настроек (иначе SECRET_KEY окажется пустым).
 load_dotenv()
@@ -1202,6 +1202,28 @@ class AdminAccessRequest(BaseModel):
     specialty_codes: list[str] = []
 
 
+class AdminUserUpdateRequest(BaseModel):
+    """Запрос обновления пользователя администратором.
+
+    Оба поля опциональны и обновляются независимо (только явно переданные).
+    specialty_code: null/пустая строка -> снять специальность; максимум 32 символа.
+    """
+    is_admin: bool | None = None
+    specialty_code: str | None = None
+
+    @field_validator("specialty_code")
+    @classmethod
+    def _normalize_specialty_code(cls, v):
+        if v is None:
+            return None
+        v = v.strip()
+        if v == "":
+            return None
+        if len(v) > 32:
+            raise ValueError("specialty_code не должен превышать 32 символа")
+        return v
+
+
 def _safe_remove(file_path: str):
     """Удаляет файл с диска, не падая при его отсутствии."""
     if file_path and os.path.exists(file_path):
@@ -1249,6 +1271,80 @@ async def admin_list_users(current_user: dict = Depends(get_current_admin_user))
     except Exception as e:
         log.error(f"Ошибка получения списка пользователей: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.put("/admin/users/{user_id}")
+async def admin_update_user(
+    user_id: int,
+    payload: AdminUserUpdateRequest,
+    current_user: dict = Depends(get_current_admin_user),
+):
+    """Обновляет is_admin и/или specialty_code пользователя (только администратор).
+
+    Обновляются только явно переданные поля (payload.model_fields_set). user_id берётся
+    ТОЛЬКО из URL, is_admin — ТОЛЬКО из тела запроса (не из JWT/localStorage).
+    Защита: администратор не может снять права с самого себя. Возвращает актуальную
+    запись из БД {id, email, is_admin, specialty_code}.
+    """
+    fields = payload.model_fields_set
+    if "is_admin" not in fields and "specialty_code" not in fields:
+        raise HTTPException(status_code=400, detail="Нет полей для обновления")
+
+    if "is_admin" in fields and payload.is_admin is None:
+        raise HTTPException(status_code=400, detail="is_admin должен быть true или false")
+
+    # Защита от снятия собственных прав администратора.
+    if "is_admin" in fields and payload.is_admin is False and user_id == current_user["id"]:
+        raise HTTPException(
+            status_code=400,
+            detail="Нельзя снять права администратора с самого себя",
+        )
+
+    conn = None
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cur:
+            cur.execute("SELECT id FROM users WHERE id = %s", (user_id,))
+            if cur.fetchone() is None:
+                raise HTTPException(status_code=404, detail="Пользователь не найден")
+
+            set_parts = []
+            params = []
+            if "is_admin" in fields:
+                set_parts.append("is_admin = %s")
+                params.append(payload.is_admin)
+            if "specialty_code" in fields:
+                set_parts.append("specialty_code = %s")
+                params.append(payload.specialty_code)
+
+            params.append(user_id)
+            cur.execute(
+                f"UPDATE users SET {', '.join(set_parts)} WHERE id = %s",
+                tuple(params),
+            )
+
+            cur.execute(
+                "SELECT id, email, is_admin, specialty_code FROM users WHERE id = %s",
+                (user_id,),
+            )
+            row = cur.fetchone()
+
+        conn.commit()
+
+        return {"id": row[0], "email": row[1], "is_admin": row[2], "specialty_code": row[3]}
+    except HTTPException:
+        raise
+    except Exception as e:
+        if conn is not None:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+        log.error(f"Ошибка обновления пользователя {user_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if conn is not None:
+            conn.close()
 
 
 @app.get("/admin/articles")
