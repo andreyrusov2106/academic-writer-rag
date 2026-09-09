@@ -113,6 +113,118 @@
         .row-status.err {
             color: var(--danger);
         }
+
+        /* ── Форма загрузки статьи и список статей ── */
+        .upload-form {
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-light);
+        }
+        .upload-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-start;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .upload-label {
+            flex-shrink: 0;
+            width: 180px;
+            padding-top: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+        .admin-multiselect {
+            padding: 6px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--bg-container);
+            color: var(--text-main);
+            font-size: 13px;
+            min-width: 240px;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+        .upload-hint {
+            margin: 4px 0 0 0;
+            font-size: 12px;
+            color: var(--text-light);
+        }
+        .access-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            background: var(--chat-bot-bg);
+            color: var(--text-muted);
+            margin-right: 4px;
+        }
+        .btn-sm {
+            padding: 4px 10px;
+            font-size: 12px;
+            border-radius: 6px;
+        }
+        .btn-danger {
+            background: var(--danger);
+            color: #fff;
+            border: none;
+            padding: 6px 12px;
+            font-size: 13px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .btn-danger:hover {
+            opacity: 0.9;
+        }
+        .btn-danger:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* ── Модальное окно редактора доступа ── */
+        .modal {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 100;
+            padding: 24px;
+        }
+        .modal[hidden] {
+            display: none;
+        }
+        .modal-content {
+            background: var(--bg-container);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: var(--shadow-sm);
+            padding: 20px;
+            width: 100%;
+            max-width: 440px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-content h3 {
+            margin: 0 0 4px 0;
+            font-size: 16px;
+            color: var(--text-main);
+        }
+        .modal-subtitle {
+            margin: 0 0 16px 0;
+            font-size: 13px;
+            color: var(--text-muted);
+            word-break: break-word;
+        }
+        .modal-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 16px;
+        }
     </style>
 </head>
 <body>
@@ -135,9 +247,54 @@
 
         <section class="admin-section">
             <h2>Статьи</h2>
+
+            <!-- Форма загрузки административной статьи -->
+            <div class="upload-form">
+                <div class="upload-row">
+                    <label class="upload-label" for="article-file">PDF-файл</label>
+                    <input type="file" id="article-file" accept=".pdf">
+                </div>
+                <div class="upload-row">
+                    <label class="upload-label" for="article-users">Пользователи (доступ)</label>
+                    <select id="article-users" class="admin-multiselect" multiple size="4"></select>
+                </div>
+                <div class="upload-row">
+                    <label class="upload-label" for="article-specialties">Специальности (доступ)</label>
+                    <select id="article-specialties" class="admin-multiselect" multiple size="4"></select>
+                </div>
+                <div class="upload-row">
+                    <button id="article-upload-btn" type="button" class="btn-primary">Загрузить</button>
+                    <span id="upload-status" class="row-status"></span>
+                </div>
+                <p class="upload-hint">Пустой выбор доступа — статья будет доступна всем пользователям.</p>
+            </div>
+
+            <!-- Список статей -->
             <div id="articles-list"></div>
         </section>
     </main>
+
+    <!-- Модальное окно редактирования доступа -->
+    <div id="access-modal" class="modal" hidden>
+        <div class="modal-content">
+            <h3>Доступ к статье</h3>
+            <p id="access-article-title" class="modal-subtitle"></p>
+            <div class="upload-row">
+                <label class="upload-label" for="access-users">Пользователи</label>
+                <select id="access-users" class="admin-multiselect" multiple size="6"></select>
+            </div>
+            <div class="upload-row">
+                <label class="upload-label" for="access-specialties">Специальности</label>
+                <select id="access-specialties" class="admin-multiselect" multiple size="6"></select>
+            </div>
+            <p class="upload-hint">Пустой выбор — статья станет доступна всем пользователям.</p>
+            <div class="modal-actions">
+                <button id="access-save-btn" type="button" class="btn-primary">Сохранить</button>
+                <button id="access-cancel-btn" type="button" class="btn">Отмена</button>
+                <span id="access-status" class="row-status"></span>
+            </div>
+        </div>
+    </div>
 
     <script src="/js/admin.js"></script>
 </body>

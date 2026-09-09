@@ -12,6 +12,12 @@ const API_URL = '/api';
 const TOKEN_KEY = 'academic_writer_token';
 const USER_KEY = 'academic_writer_user';
 
+// Кэш данных, полученных с сервера. Используется для заполнения
+// селекторов доступа и для подписей в списке статей.
+let usersCache = [];        // [{id, email, specialty_code, is_admin}]
+let articlesCache = [];     // [{article_url, title, chunks, allowed_user_ids, allowed_specialty_codes, global}]
+let editingArticleUrl = null; // article_url, редактируемый в модальном окне
+
 function escapeHtml(str) {
     return String(str ?? '')
         .replaceAll('&', '&amp;')
@@ -230,7 +236,419 @@ async function loadUsers() {
         return;
     }
 
+    usersCache = data.users || [];
     renderUsers(data.users);
+
+    // Заполняем селекторы доступа (формы загрузки и модального редактора).
+    populateUserSelect(document.getElementById('article-users'), []);
+    populateUserSelect(document.getElementById('access-users'), []);
+    populateSpecialtySelect(document.getElementById('article-specialties'), []);
+    populateSpecialtySelect(document.getElementById('access-specialties'), []);
+}
+
+// ─────────────────────────────────────────────────────────────
+// Хелперы для селекторов доступа
+// ─────────────────────────────────────────────────────────────
+function getSpecialtyCodes() {
+    const codes = new Set();
+    for (const u of usersCache) {
+        if (u.specialty_code) codes.add(u.specialty_code);
+    }
+    return Array.from(codes).sort();
+}
+
+function populateUserSelect(selectEl, selectedUserIds) {
+    if (!selectEl) return;
+    const selected = new Set(selectedUserIds || []);
+    selectEl.innerHTML = usersCache.map(u => {
+        const id = u.id;
+        return `<option value="${escapeHtml(id)}" ${selected.has(id) ? 'selected' : ''}>${escapeHtml(u.email)}</option>`;
+    }).join('');
+}
+
+function populateSpecialtySelect(selectEl, selectedCodes) {
+    if (!selectEl) return;
+    const selected = new Set(selectedCodes || []);
+    selectEl.innerHTML = getSpecialtyCodes().map(c =>
+        `<option value="${escapeHtml(c)}" ${selected.has(c) ? 'selected' : ''}>${escapeHtml(c)}</option>`
+    ).join('');
+}
+
+function readSelectedUserIds(selectEl) {
+    return Array.from(selectEl ? selectEl.selectedOptions : [])
+        .map(o => Number(o.value))
+        .filter(n => Number.isInteger(n));
+}
+
+function readSelectedSpecialtyCodes(selectEl) {
+    return Array.from(selectEl ? selectEl.selectedOptions : [])
+        .map(o => o.value);
+}
+
+// ─────────────────────────────────────────────────────────────
+// Список статей
+// ─────────────────────────────────────────────────────────────
+async function loadArticles() {
+    const listEl = document.getElementById('articles-list');
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) {
+        redirectToLogin();
+        return;
+    }
+
+    let res;
+    try {
+        res = await fetch(`${API_URL}/admin/articles`, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+    } catch (e) {
+        if (listEl) listEl.innerHTML = '<p class="empty">Не удалось подключиться к серверу</p>';
+        return;
+    }
+
+    if (res.status === 401) {
+        clearToken();
+        redirectToLogin();
+        return;
+    }
+
+    if (res.status === 403) {
+        if (listEl) listEl.innerHTML = '<p class="access-denied">Доступ запрещён</p>';
+        return;
+    }
+
+    if (!res.ok) {
+        if (listEl) listEl.innerHTML = `<p class="empty">Ошибка сервера (${res.status})</p>`;
+        return;
+    }
+
+    let data;
+    try {
+        data = await res.json();
+    } catch (e) {
+        if (listEl) listEl.innerHTML = '<p class="empty">Некорректный ответ сервера</p>';
+        return;
+    }
+
+    articlesCache = data.articles || [];
+    renderArticles(articlesCache);
+}
+
+function renderArticles(articles) {
+    const listEl = document.getElementById('articles-list');
+    if (!listEl) return;
+
+    if (!Array.isArray(articles) || articles.length === 0) {
+        listEl.innerHTML = '<p class="empty">Статьи не найдены</p>';
+        return;
+    }
+
+    const emailById = new Map();
+    for (const u of usersCache) emailById.set(u.id, u.email);
+
+    const rows = articles.map(a => `
+        <tr data-article-url="${escapeHtml(a.article_url)}">
+            <td>${escapeHtml(a.title)}</td>
+            <td>${escapeHtml(a.chunks)}</td>
+            <td>${formatAccess(a, emailById)}</td>
+            <td>
+                <button type="button" class="btn btn-sm edit-access-btn">Доступ</button>
+                <button type="button" class="btn-danger btn-sm delete-article-btn">Удалить</button>
+            </td>
+        </tr>
+    `).join('');
+
+    listEl.innerHTML = `
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Название</th>
+                    <th>Чанки</th>
+                    <th>Доступ</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+        </table>
+    `;
+}
+
+function formatAccess(article, emailById) {
+    if (article.global) {
+        return '<span class="badge badge-user">Все пользователи</span>';
+    }
+    const userIds = article.allowed_user_ids || [];
+    const codes = article.allowed_specialty_codes || [];
+    const parts = [];
+    if (userIds.length > 0) {
+        const emails = userIds.map(id => emailById.get(id) || `#${id}`);
+        parts.push(`<span class="access-tag" title="${escapeHtml(emails.join(', '))}">👤 ${userIds.length}</span>`);
+    }
+    if (codes.length > 0) {
+        parts.push(`<span class="access-tag" title="${escapeHtml(codes.join(', '))}">🎓 ${codes.length}</span>`);
+    }
+    return parts.join(' ') || '<span class="badge badge-user">Все пользователи</span>';
+}
+
+// ─────────────────────────────────────────────────────────────
+// Загрузка PDF (POST /api/admin/upload)
+// ─────────────────────────────────────────────────────────────
+async function uploadArticle() {
+    const fileInput = document.getElementById('article-file');
+    const usersSelect = document.getElementById('article-users');
+    const specialtiesSelect = document.getElementById('article-specialties');
+    const btn = document.getElementById('article-upload-btn');
+    const statusEl = document.getElementById('upload-status');
+
+    if (!fileInput || !btn) return;
+
+    const file = fileInput.files && fileInput.files[0];
+    if (!file) {
+        setStatus(statusEl, 'Выберите PDF-файл', 'err');
+        return;
+    }
+    if (!file.name.toLowerCase().endsWith('.pdf')) {
+        setStatus(statusEl, 'Можно загружать только PDF файлы', 'err');
+        return;
+    }
+
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) {
+        redirectToLogin();
+        return;
+    }
+
+    const userIds = readSelectedUserIds(usersSelect);
+    const specialtyCodes = readSelectedSpecialtyCodes(specialtiesSelect);
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('users', JSON.stringify(userIds));
+    formData.append('specialties', JSON.stringify(specialtyCodes));
+
+    setStatus(statusEl, 'Загрузка…', '');
+    btn.disabled = true;
+
+    let res;
+    try {
+        // Для FormData НЕ задаём Content-Type вручную — браузер подставит
+        // multipart/form-data с корректным boundary.
+        res = await fetch(`${API_URL}/admin/upload`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formData
+        });
+    } catch (e) {
+        setStatus(statusEl, 'Ошибка сети', 'err');
+        btn.disabled = false;
+        return;
+    }
+
+    if (res.status === 401) {
+        clearToken();
+        redirectToLogin();
+        return;
+    }
+
+    if (res.status === 403) {
+        setStatus(statusEl, 'Доступ запрещён', 'err');
+        btn.disabled = false;
+        return;
+    }
+
+    let data;
+    try {
+        data = await res.json();
+    } catch (e) {
+        data = null;
+    }
+
+    if (!res.ok) {
+        const msg = data && data.detail ? data.detail : `Ошибка (${res.status})`;
+        setStatus(statusEl, msg, 'err');
+        btn.disabled = false;
+        return;
+    }
+
+    // Бэкенд возвращает HTTP 200 + {success: false, error} при ошибках обработки.
+    if (!data || data.success !== true) {
+        const msg = data && data.error ? data.error : 'Сервер не смог обработать файл';
+        setStatus(statusEl, msg, 'err');
+        btn.disabled = false;
+        return;
+    }
+
+    // Успех: очищаем форму и обновляем список.
+    fileInput.value = '';
+    if (usersSelect) { for (const o of usersSelect.options) o.selected = false; }
+    if (specialtiesSelect) { for (const o of specialtiesSelect.options) o.selected = false; }
+    setStatus(statusEl, 'Статья загружена', 'ok');
+    btn.disabled = false;
+    await loadArticles();
+}
+
+// ─────────────────────────────────────────────────────────────
+// Редактирование доступа к статье (PUT /api/admin/articles/{url}/access)
+// ─────────────────────────────────────────────────────────────
+function openAccessEditor(articleUrl) {
+    const article = articlesCache.find(a => a.article_url === articleUrl);
+    if (!article) return;
+
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) {
+        redirectToLogin();
+        return;
+    }
+
+    editingArticleUrl = articleUrl;
+
+    const titleEl = document.getElementById('access-article-title');
+    if (titleEl) titleEl.textContent = article.title || articleUrl;
+
+    populateUserSelect(document.getElementById('access-users'), article.allowed_user_ids || []);
+    populateSpecialtySelect(document.getElementById('access-specialties'), article.allowed_specialty_codes || []);
+    setStatus(document.getElementById('access-status'), '', '');
+
+    const modal = document.getElementById('access-modal');
+    if (modal) modal.hidden = false;
+}
+
+function closeAccessEditor() {
+    editingArticleUrl = null;
+    const modal = document.getElementById('access-modal');
+    if (modal) modal.hidden = true;
+}
+
+async function saveAccess() {
+    const usersSelect = document.getElementById('access-users');
+    const specialtiesSelect = document.getElementById('access-specialties');
+    const statusEl = document.getElementById('access-status');
+    const btn = document.getElementById('access-save-btn');
+
+    if (!editingArticleUrl || !btn) return;
+
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) {
+        redirectToLogin();
+        return;
+    }
+
+    const userIds = readSelectedUserIds(usersSelect);
+    const specialtyCodes = readSelectedSpecialtyCodes(specialtiesSelect);
+
+    // Пустые оба списка -> global-доступ. Требуем явного подтверждения.
+    if (userIds.length === 0 && specialtyCodes.length === 0) {
+        if (!confirm('Правила доступа будут очищены. Статья станет доступна всем пользователям. Продолжить?')) {
+            return;
+        }
+    }
+
+    setStatus(statusEl, 'Сохранение…', '');
+    btn.disabled = true;
+
+    const encodedUrl = encodeURIComponent(editingArticleUrl);
+
+    let res;
+    try {
+        res = await fetch(`${API_URL}/admin/articles/${encodedUrl}/access`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ user_ids: userIds, specialty_codes: specialtyCodes })
+        });
+    } catch (e) {
+        setStatus(statusEl, 'Ошибка сети', 'err');
+        btn.disabled = false;
+        return;
+    }
+
+    if (res.status === 401) {
+        clearToken();
+        redirectToLogin();
+        return;
+    }
+
+    if (res.status === 403) {
+        setStatus(statusEl, 'Доступ запрещён', 'err');
+        btn.disabled = false;
+        return;
+    }
+
+    let data;
+    try {
+        data = await res.json();
+    } catch (e) {
+        data = null;
+    }
+
+    if (!res.ok) {
+        const msg = data && (data.detail || data.error) ? (data.detail || data.error) : `Ошибка (${res.status})`;
+        setStatus(statusEl, msg, 'err');
+        btn.disabled = false;
+        return;
+    }
+
+    closeAccessEditor();
+    await loadArticles();
+}
+
+// ─────────────────────────────────────────────────────────────
+// Удаление статьи (DELETE /api/admin/articles/{url})
+// ─────────────────────────────────────────────────────────────
+async function deleteArticle(articleUrl) {
+    if (!confirm('Удалить статью? Это удалит PDF, чанки и правила доступа.')) return;
+
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) {
+        redirectToLogin();
+        return;
+    }
+
+    const encodedUrl = encodeURIComponent(articleUrl);
+
+    let res;
+    try {
+        res = await fetch(`${API_URL}/admin/articles/${encodedUrl}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+    } catch (e) {
+        alert('Ошибка сети при удалении статьи');
+        return;
+    }
+
+    if (res.status === 401) {
+        clearToken();
+        redirectToLogin();
+        return;
+    }
+
+    if (res.status === 403) {
+        alert('Доступ запрещён');
+        return;
+    }
+
+    if (res.status === 404) {
+        alert('Статья не найдена');
+        await loadArticles();
+        return;
+    }
+
+    if (!res.ok) {
+        let data = null;
+        try {
+            data = await res.json();
+        } catch (e) {
+            data = null;
+        }
+        alert(data && data.detail ? data.detail : `Ошибка (${res.status})`);
+        return;
+    }
+
+    await loadArticles();
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -254,5 +672,35 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    loadUsers();
+    // ── Загрузка статьи ──
+    const uploadBtn = document.getElementById('article-upload-btn');
+    if (uploadBtn) uploadBtn.addEventListener('click', uploadArticle);
+
+    // ── Делегирование кликов в таблице статей (Доступ / Удалить) ──
+    const articlesListEl = document.getElementById('articles-list');
+    if (articlesListEl) {
+        articlesListEl.addEventListener('click', (e) => {
+            const editBtn = e.target.closest('.edit-access-btn');
+            if (editBtn) {
+                const row = editBtn.closest('tr[data-article-url]');
+                if (row) openAccessEditor(row.dataset.articleUrl);
+                return;
+            }
+            const delBtn = e.target.closest('.delete-article-btn');
+            if (delBtn) {
+                const row = delBtn.closest('tr[data-article-url]');
+                if (row) deleteArticle(row.dataset.articleUrl);
+            }
+        });
+    }
+
+    // ── Редактор доступа ──
+    const accessSaveBtn = document.getElementById('access-save-btn');
+    if (accessSaveBtn) accessSaveBtn.addEventListener('click', saveAccess);
+
+    const accessCancelBtn = document.getElementById('access-cancel-btn');
+    if (accessCancelBtn) accessCancelBtn.addEventListener('click', closeAccessEditor);
+
+    // Сначала пользователи (нужны для селекторов доступа), затем статьи.
+    loadUsers().then(() => loadArticles());
 });
