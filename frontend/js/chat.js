@@ -234,7 +234,7 @@ async function sendChat() {
     answerDiv.innerHTML = '<em>Думаю...</em>';
     document.getElementById('chat-messages').appendChild(answerDiv);
 
-    let fullAnswer = ''; let sourcesHtml = '';
+    let fullAnswer = ''; let sourcesEl = null;
 
     try {
         const historyToSend = chatHistory.slice(-6).map(msg => ({
@@ -286,44 +286,26 @@ async function sendChat() {
                         const data = JSON.parse(line.slice(6));
                         if (data.type === 'sources') {
                             if (data.sources) data.sources.forEach(s => { if (!allSources.some(x => x.title === s.title)) allSources.push(s); });
-                            sourcesHtml = '<div class="answer-sources">';
-                            sourcesHtml += '<button type="button" class="answer-sources-toggle" onclick="toggleAnswerSources(this)">'
-                                + '<span class="answer-sources-icon">▶</span> 📚 Источники (' + data.sources.length + ')'
-                                + '</button>';
-                            sourcesHtml += '<div class="answer-sources-body">';
-                            data.sources.forEach((source, index) => {
-                                const sim = (data.similarity_scores[index] * 100).toFixed(1);
-                                const escT = escapeHtml(source.title).replace(/\n/g, ' ');
-                                const escTx = escapeHtml(source.chunk_text).substring(0, 300).replace(/\n/g, ' ');
-                                const isOn = source.is_online || source.title.includes('🌐');
-                                const doi = source.article_url ? `https://doi.org/${source.article_url}` : '';
-                                sourcesHtml += `<div class="source-item" style="${isOn ? 'border-left-color: #4caf50;' : ''}">`;
-                                sourcesHtml += `<button class="insert-cite-btn" onclick="insertCitation('${escT}', '${escTx}')"> Вставить</button>`;
-                                sourcesHtml += `<strong>[${index + 1}] ${escapeHtml(source.title)}</strong>`;
-                                sourcesHtml += isOn ? ` <span style="background:#e8f5e9;color:#2e7d32;padding:2px 6px;border-radius:4px;font-size:10px;">ONLINE</span>` : ` <span style="color:#999;font-size:11px;">(${sim}%)</span>`;
-                                sourcesHtml += `<br><em>${escapeHtml(source.chunk_text).substring(0, 200)}...</em><br>`;
-                                if (isOn && doi) sourcesHtml += `<a href="${doi}" target="_blank" style="color:#667eea;font-size:12px;"> Открыть (DOI)</a>`;
-                                sourcesHtml += `</div>`;
-                            });
-                            sourcesHtml += '</div></div>';
+                            sourcesEl = buildAnswerSources(data);
+                            renderAssistantAnswer(answerDiv, fullAnswer, sourcesEl);
                         } else if (data.type === 'answer') {
                             fullAnswer += data.content;
-                            answerDiv.innerHTML = fullAnswer.replace(/\n/g, '<br>') + sourcesHtml;
+                            renderAssistantAnswer(answerDiv, fullAnswer, sourcesEl);
                             document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight;
                         } else if (data.type === 'done') {
-                            answerDiv.innerHTML = fullAnswer.replace(/\n/g, '<br>') + sourcesHtml;
+                            renderAssistantAnswer(answerDiv, fullAnswer, sourcesEl);
                             chatHistory.push({ role: 'bot', text: fullAnswer });
                             localStorage.setItem('academic_writer_chat_history', JSON.stringify(chatHistory));
                             incrementLocalCounter(); // ✅ Увеличиваем счётчик после успешного ответа
                         } else if (data.type === 'error') {
-                            answerDiv.innerHTML = `<span style="color: red;">Ошибка: ${data.content}</span>`;
+                            renderAssistantError(answerDiv, data.content);
                         }
                     } catch (e) { console.error('Parse error:', e); }
                 }
             }
         }
     } catch (error) {
-        answerDiv.innerHTML = `<span style="color: red;">Ошибка: ${error.message}</span>`;
+        renderAssistantError(answerDiv, error.message);
     } finally {
         sendBtn.disabled = false; isStreaming = false;
         document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight;
@@ -357,6 +339,107 @@ function toggleAnswerSources(btn) {
     if (!body) return;
     const expanded = body.classList.toggle('expanded');
     if (icon) icon.textContent = expanded ? '▼' : '▶';
+}
+
+// Безопасное построение блока источников ответа ассистента через DOM API.
+// Заголовок и текст чанка выводятся как текст (textContent), кнопка «Вставить»
+// использует addEventListener + замыкание вместо inline-onclick.
+function buildAnswerSources(data) {
+    if (!data.sources || data.sources.length === 0) return null;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'answer-sources';
+
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'answer-sources-toggle';
+    const icon = document.createElement('span');
+    icon.className = 'answer-sources-icon';
+    icon.textContent = '▶';
+    toggle.appendChild(icon);
+    toggle.appendChild(document.createTextNode(' 📚 Источники (' + data.sources.length + ')'));
+    toggle.addEventListener('click', function () { toggleAnswerSources(toggle); });
+    wrap.appendChild(toggle);
+
+    const body = document.createElement('div');
+    body.className = 'answer-sources-body';
+
+    data.sources.forEach((source, index) => {
+        const sim = (data.similarity_scores[index] * 100).toFixed(1);
+        const isOn = source.is_online || source.title.includes('🌐');
+        const doi = source.article_url ? `https://doi.org/${source.article_url}` : '';
+
+        const item = document.createElement('div');
+        item.className = 'source-item';
+        if (isOn) item.style.borderLeftColor = '#4caf50';
+
+        const btn = document.createElement('button');
+        btn.className = 'insert-cite-btn';
+        btn.textContent = ' Вставить';
+        const citeTitle = source.title.replace(/\n/g, ' ');
+        const citeText = source.chunk_text.substring(0, 300).replace(/\n/g, ' ');
+        btn.addEventListener('click', function () { insertCitation(citeTitle, citeText); });
+        item.appendChild(btn);
+
+        const strong = document.createElement('strong');
+        strong.textContent = `[${index + 1}] ${source.title}`;
+        item.appendChild(strong);
+
+        if (isOn) {
+            const online = document.createElement('span');
+            online.style.cssText = 'background:#e8f5e9;color:#2e7d32;padding:2px 6px;border-radius:4px;font-size:10px;';
+            online.textContent = 'ONLINE';
+            item.appendChild(online);
+        } else {
+            const simSpan = document.createElement('span');
+            simSpan.style.cssText = 'color:#999;font-size:11px;';
+            simSpan.textContent = `(${sim}%)`;
+            item.appendChild(simSpan);
+        }
+
+        item.appendChild(document.createElement('br'));
+        const em = document.createElement('em');
+        em.textContent = source.chunk_text.substring(0, 200) + '...';
+        item.appendChild(em);
+        item.appendChild(document.createElement('br'));
+
+        if (isOn && doi) {
+            const a = document.createElement('a');
+            a.href = doi;
+            a.target = '_blank';
+            a.style.cssText = 'color:#667eea;font-size:12px;';
+            a.textContent = ' Открыть (DOI)';
+            item.appendChild(a);
+        }
+
+        body.appendChild(item);
+    });
+
+    wrap.appendChild(body);
+    return wrap;
+}
+
+// Отрисовка ответа ассистента: текст выводится через textContent (переносы строк
+// сохраняются через white-space: pre-wrap), блок источников — отдельный DOM-узел.
+function renderAssistantAnswer(answerDiv, text, sourcesEl) {
+    answerDiv.textContent = '';
+    if (text) {
+        const textEl = document.createElement('div');
+        textEl.className = 'assistant-answer-text';
+        textEl.style.whiteSpace = 'pre-wrap';
+        textEl.textContent = text;
+        answerDiv.appendChild(textEl);
+    }
+    if (sourcesEl) answerDiv.appendChild(sourcesEl);
+}
+
+// Безопасная отрисовка ошибки: текст выводится как текст, а не как HTML.
+function renderAssistantError(answerDiv, message) {
+    answerDiv.textContent = '';
+    const span = document.createElement('span');
+    span.style.color = 'red';
+    span.textContent = 'Ошибка: ' + String(message);
+    answerDiv.appendChild(span);
 }
 // ═══════════════════════════════════════════════════════════
 // ИНДИКАТОР ЛИМИТОВ
@@ -760,22 +843,43 @@ async function loadDocuments() {
 
         // Источники — только список. upload-area остаётся статичной в academic-writer.html,
         // поэтому не копируем её сюда и не перепривязываем обработчики.
-        let html = '<div class="my-sources-section"><h4 style="margin:10px 0;font-size:14px;color:var(--text-main);">📂 Мои источники</h4>';
+        const section = document.createElement('div');
+        section.className = 'my-sources-section';
+        const heading = document.createElement('h4');
+        heading.style.cssText = 'margin:10px 0;font-size:14px;color:var(--text-main);';
+        heading.textContent = '📂 Мои источники';
+        section.appendChild(heading);
 
         docs.forEach(doc => {
-            const safeTitle = escapeHtml(doc.title);
-            const safeUrl = escapeHtml(doc.article_url);
-            html += `<div class="doc-item">
-                <div class="doc-info">
-                    <strong>${safeTitle}</strong>
-                    <span class="doc-chunks">${doc.chunks} чанков</span>
-                </div>
-                <button class="doc-delete-btn" onclick="deleteDocument('${safeUrl}')" title="Удалить">🗑 Удалить</button>
-            </div>`;
+            const item = document.createElement('div');
+            item.className = 'doc-item';
+
+            const info = document.createElement('div');
+            info.className = 'doc-info';
+
+            const title = document.createElement('strong');
+            title.textContent = doc.title;
+            info.appendChild(title);
+
+            const chunks = document.createElement('span');
+            chunks.className = 'doc-chunks';
+            chunks.textContent = `${doc.chunks} чанков`;
+            info.appendChild(chunks);
+
+            item.appendChild(info);
+
+            const btn = document.createElement('button');
+            btn.className = 'doc-delete-btn';
+            btn.title = 'Удалить';
+            btn.textContent = '🗑 Удалить';
+            btn.addEventListener('click', function () { deleteDocument(doc.article_url); });
+            item.appendChild(btn);
+
+            section.appendChild(item);
         });
 
-        html += '</div>';
-        sourcesList.innerHTML = html;
+        sourcesList.innerHTML = '';
+        sourcesList.appendChild(section);
     } catch (e) {
         console.error('Ошибка загрузки документов:', e);
         sourcesList.innerHTML = '<div style="color:#e74c3c;font-size:13px;">Ошибка загрузки списка</div>';

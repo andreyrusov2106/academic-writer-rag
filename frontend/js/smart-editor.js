@@ -181,24 +181,52 @@ window.executeSmartAction = async function executeSmartAction(action) {
 function showSourcesPopup(sources, analysis) {
     const popup = document.getElementById('smart-sources-popup');
     const content = document.getElementById('smart-sources-content');
-    
-    let html = `<div style="margin-bottom: 20px; padding: 15px; background: #e3f2fd; border-radius: 8px;">`;
-    html += `<strong>📊 Анализ:</strong><br>${analysis.replace(/\n/g, '<br>')}`;
-    html += `</div>`;
-    
+
+    content.textContent = '';
+
+    // Анализ — текст LLM: выводим как текст, переносы строк сохраняем через pre-wrap.
+    const analysisDiv = document.createElement('div');
+    analysisDiv.style.cssText = 'margin-bottom: 20px; padding: 15px; background: #e3f2fd; border-radius: 8px;';
+    const analysisStrong = document.createElement('strong');
+    analysisStrong.textContent = '📊 Анализ:';
+    analysisDiv.appendChild(analysisStrong);
+    analysisDiv.appendChild(document.createElement('br'));
+    const analysisText = document.createElement('span');
+    analysisText.style.whiteSpace = 'pre-wrap';
+    analysisText.textContent = analysis;
+    analysisDiv.appendChild(analysisText);
+    content.appendChild(analysisDiv);
+
     if (sources && sources.length > 0) {
-        html += '<strong>📚 Источники:</strong><br><br>';
+        const header = document.createElement('strong');
+        header.textContent = '📚 Источники:';
+        content.appendChild(header);
+        content.appendChild(document.createElement('br'));
+        content.appendChild(document.createElement('br'));
+
         sources.forEach((source, index) => {
-            html += `<div style="margin-bottom: 10px; padding: 10px; background: #f9f9f9; border-radius: 5px; border-left: 3px solid #667eea;">`;
-            html += `<strong>${index + 1}. ${source.title}</strong><br>`;
-            html += `<em style="font-size: 12px; color: #666;">${source.chunk_text}</em>`;
-            html += `</div>`;
+            const item = document.createElement('div');
+            item.style.cssText = 'margin-bottom: 10px; padding: 10px; background: #f9f9f9; border-radius: 5px; border-left: 3px solid #667eea;';
+
+            const strong = document.createElement('strong');
+            strong.textContent = `${index + 1}. ${source.title}`;
+            item.appendChild(strong);
+            item.appendChild(document.createElement('br'));
+
+            const em = document.createElement('em');
+            em.style.cssText = 'font-size: 12px; color: #666;';
+            em.textContent = source.chunk_text;
+            item.appendChild(em);
+
+            content.appendChild(item);
         });
     } else {
-        html += '<p style="color: #999;">Источники не найдены</p>';
+        const p = document.createElement('p');
+        p.style.color = '#999';
+        p.textContent = 'Источники не найдены';
+        content.appendChild(p);
     }
-    
-    content.innerHTML = html;
+
     popup.classList.add('visible');
 }
 

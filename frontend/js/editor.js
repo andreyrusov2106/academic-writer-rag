@@ -81,7 +81,7 @@ function generateTOC() {
         if (level === 'h2') indent = 20;
         if (level === 'h3') indent = 40;
         
-        tocHtml += `<p style="margin-left: ${indent}px; margin-bottom: 5px;">${counter}. ${text}</p>`;
+        tocHtml += `<p style="margin-left: ${indent}px; margin-bottom: 5px;">${counter}. ${escapeHtml(text)}</p>`;
     });
     
     tocHtml += '<p><br></p><hr><p><br></p>';
@@ -103,9 +103,9 @@ function generateBibliography() {
     bibliographyHtml += '<ol style="margin-left: 20px;">';
     
     allSources.forEach((source, index) => {
-        const title = source.title || 'Без названия';
-        const url = source.article_url || '';
-        
+        const title = escapeHtml(source.title || 'Без названия');
+        const url = escapeHtml(source.article_url || '');
+
         bibliographyHtml += `<li style="margin-bottom: 10px;">`;
         bibliographyHtml += `${title}.`;
         if (url) {

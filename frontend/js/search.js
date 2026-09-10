@@ -2,6 +2,14 @@
 // ПОИСК В OPENALEX
 // ═══════════════════════════════════════════════════════════
 
+// Возвращает URL только если он безопасен для href (http/https).
+// Отклоняет javascript:, data: и прочие небезопасные схемы.
+function safeExternalUrl(value) {
+    if (typeof value !== 'string') return null;
+    const v = value.trim();
+    return /^https?:\/\//i.test(v) ? v : null;
+}
+
 function openSearchModal() {
     const chatInput = document.getElementById('chat-input').value.trim();
     if (chatInput) {
@@ -78,38 +86,71 @@ async function executeSearch() {
         loadingDiv.remove();
         
         if (data.results && data.results.length > 0) {
-            let resultsHtml = '<div style="margin-top: 10px; padding: 10px; background: #e3f2fd; border-radius: 8px;">';
-            resultsHtml += `<strong> Найдено ${data.meta.count} статей (показано ${data.results.length}):</strong><br><br>`;
-            
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'chat-message bot';
+
+            const container = document.createElement('div');
+            container.style.cssText = 'margin-top: 10px; padding: 10px; background: #e3f2fd; border-radius: 8px;';
+
+            const header = document.createElement('strong');
+            header.textContent = ` Найдено ${data.meta.count} статей (показано ${data.results.length}):`;
+            container.appendChild(header);
+            container.appendChild(document.createElement('br'));
+            container.appendChild(document.createElement('br'));
+
             data.results.forEach((work, index) => {
                 const title = work.title || 'Без названия';
                 const year = work.publication_year || 'н/д';
-                const authors = work.authorships 
+                const authors = work.authorships
                     ? work.authorships.slice(0, 3).map(a => a.author.display_name).join(', ')
                     : 'н/д';
                 const doi = work.doi || '';
-                const url = doi ? `https://doi.org/${doi.replace('https://doi.org/', '')}` : '';
+                const url = safeExternalUrl(doi ? `https://doi.org/${doi.replace('https://doi.org/', '')}` : '');
                 const oa = work.open_access?.is_oa ? '🟢 OA' : '';
-                
-                resultsHtml += `<div style="margin-bottom: 10px; padding: 8px; background: white; border-radius: 5px;">`;
-                resultsHtml += `<strong>${index + 1}. ${title}</strong> ${oa}<br>`;
-                resultsHtml += `<em>Авторы:</em> ${authors}<br>`;
-                resultsHtml += `<em>Год:</em> ${year}<br>`;
+
+                const item = document.createElement('div');
+                item.style.cssText = 'margin-bottom: 10px; padding: 8px; background: white; border-radius: 5px;';
+
+                const titleStrong = document.createElement('strong');
+                titleStrong.textContent = `${index + 1}. ${title}`;
+                item.appendChild(titleStrong);
+                if (oa) item.appendChild(document.createTextNode(' ' + oa));
+                item.appendChild(document.createElement('br'));
+
+                const authorsEm = document.createElement('em');
+                authorsEm.textContent = 'Авторы:';
+                item.appendChild(authorsEm);
+                item.appendChild(document.createTextNode(' ' + authors));
+                item.appendChild(document.createElement('br'));
+
+                const yearEm = document.createElement('em');
+                yearEm.textContent = 'Год:';
+                item.appendChild(yearEm);
+                item.appendChild(document.createTextNode(' ' + year));
+                item.appendChild(document.createElement('br'));
+
                 if (url) {
-                    resultsHtml += `<a href="${url}" target="_blank" style="color: #667eea;">📄 Открыть статью</a>`;
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.target = '_blank';
+                    a.style.color = '#667eea';
+                    a.textContent = '📄 Открыть статью';
+                    item.appendChild(a);
                 }
-                resultsHtml += `</div>`;
+
+                container.appendChild(item);
             });
-            
-            resultsHtml += '<br><em style="font-size: 11px; color: #666;">💡 Чтобы добавить статью в базу знаний, скачайте PDF и загрузите через панель справа</em>';
-            resultsHtml += '</div>';
-            
-            const resultDiv = document.createElement('div');
-            resultDiv.className = 'chat-message bot';
-            resultDiv.innerHTML = resultsHtml;
+
+            container.appendChild(document.createElement('br'));
+            const tip = document.createElement('em');
+            tip.style.cssText = 'font-size: 11px; color: #666;';
+            tip.textContent = '💡 Чтобы добавить статью в базу знаний, скачайте PDF и загрузите через панель справа';
+            container.appendChild(tip);
+
+            resultDiv.appendChild(container);
             messagesDiv.appendChild(resultDiv);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
-            
+
             showNotification(`🔍 Найдено ${data.meta.count} статей`);
         } else {
             const noResultDiv = document.createElement('div');
@@ -119,7 +160,11 @@ async function executeSearch() {
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
     } catch (error) {
-        loadingDiv.innerHTML = `<span style="color: red;">Ошибка поиска: ${error.message}</span>`;
+        loadingDiv.textContent = '';
+        const errSpan = document.createElement('span');
+        errSpan.style.color = 'red';
+        errSpan.textContent = 'Ошибка поиска: ' + String(error.message);
+        loadingDiv.appendChild(errSpan);
         console.error('Ошибка OpenAlex:', error);
     }
 }

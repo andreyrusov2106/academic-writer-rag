@@ -45,10 +45,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // Загрузка темы
     loadTheme();
     
-    // Загрузка сохраненного контента
+    // Загрузка сохраненного контента.
+    // Сохранённый HTML пропускаем через Quill Clipboard-конвертер, который
+    // строит Delta и отбрасывает script/event-handler узлы, не исполняя их.
     const savedContent = localStorage.getItem('academic_writer_content');
     if (savedContent) {
-        quill.root.innerHTML = savedContent;
+        try {
+            const delta = quill.clipboard.convert({ html: savedContent });
+            quill.setContents(delta);
+        } catch (e) {
+            console.error('Не удалось восстановить документ:', e);
+        }
         showNotification(' Документ восстановлен');
     }
     
