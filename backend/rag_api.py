@@ -1116,7 +1116,17 @@ class DeleteDocumentRequest(BaseModel):
 
 @app.get("/documents")
 async def list_documents(current_user: dict = Depends(get_current_user)):
-    """Возвращает список документов текущего пользователя, сгруппированный по article_url."""
+    """Возвращает список документов, доступных текущему пользователю, сгруппированный по article_url.
+
+    Модель доступа совпадает с match_documents() (см. миграцию 003_admin_article_access.sql):
+      - собственные документы: documents.user_id = current_user["id"];
+      - административные статьи: documents.user_id IS NULL и одно из:
+          * нет ни одного access-правила для article_url -> глобальный доступ всем;
+          * пользователь указан в document_access_users;
+          * specialty_code пользователя присутствует в document_access_specialties.
+    """
+    user_id = current_user["id"]
+    specialty_code = current_user.get("specialty_code")
     try:
         conn = get_db_connection()
         with conn.cursor() as cur:
@@ -1125,10 +1135,38 @@ async def list_documents(current_user: dict = Depends(get_current_user)):
                 SELECT article_url, title, COUNT(*) AS chunks
                 FROM documents
                 WHERE user_id = %s
+                   OR (
+                        user_id IS NULL
+                        AND (
+                            (
+                                NOT EXISTS (
+                                    SELECT 1 FROM document_access_users au
+                                    WHERE au.article_url = documents.article_url
+                                )
+                                AND NOT EXISTS (
+                                    SELECT 1 FROM document_access_specialties asp
+                                    WHERE asp.article_url = documents.article_url
+                                )
+                            )
+                            OR EXISTS (
+                                SELECT 1 FROM document_access_users au
+                                WHERE au.article_url = documents.article_url
+                                  AND au.user_id = %s
+                            )
+                            OR (
+                                %s IS NOT NULL
+                                AND EXISTS (
+                                    SELECT 1 FROM document_access_specialties asp
+                                    WHERE asp.article_url = documents.article_url
+                                      AND asp.specialty_code = %s
+                                )
+                            )
+                        )
+                   )
                 GROUP BY article_url, title
                 ORDER BY title
                 """,
-                (current_user["id"],)
+                (user_id, user_id, specialty_code, specialty_code)
             )
             rows = cur.fetchall()
         conn.close()
