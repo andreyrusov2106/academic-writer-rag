@@ -782,6 +782,18 @@ async def login(user: UserLogin):
         "specialty_code": db_user["specialty_code"]      # ✅ Источник: только БД
     }
 
+@app.get("/auth/me")
+async def get_me(current_user: dict = Depends(get_current_user)):
+    # Актуальные лимиты и тариф берутся из БД через get_current_user,
+    # а не из данных фронтенда/localStorage.
+    return {
+        "user_id": current_user["id"],
+        "email": current_user["email"],
+        "subscription_type": current_user["subscription_type"],
+        "requests_used": current_user["requests_used"],
+        "requests_limit": current_user["requests_limit"],
+    }
+
 @app.post("/ask-stream")
 async def ask_question_stream(
     request: QueryRequest,

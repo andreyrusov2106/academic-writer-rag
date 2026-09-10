@@ -101,15 +101,52 @@ function initAuth() {
     document.getElementById('register-form').addEventListener('submit', handleRegister);
     if (logoutBtn) logoutBtn.addEventListener('click', logout);
     
-    if (authToken && currentUser) {
-        if (modal) modal.style.display = 'none';
-        
-        if (logoutBtn) logoutBtn.style.display = 'block';
-        updateUsageIndicator(); // ✅ Показываем лимиты при загрузке
+    if (authToken) {
+        refreshCurrentUser(); // ✅ Запрашиваем актуальные лимиты с сервера
     } else {
         if (modal) modal.style.display = 'flex';
-        
+
         if (logoutBtn) logoutBtn.style.display = 'none';
+    }
+}
+
+// ✅ Обновляет текущего пользователя и его лимиты с сервера при загрузке страницы.
+// Ранее requests_used брался только из localStorage и мог быть устаревшим.
+async function refreshCurrentUser() {
+    const modal = document.getElementById('auth-modal');
+    const logoutBtn = document.getElementById('logout-btn');
+    try {
+        const res = await fetch(`${API_URL}/auth/me`, { headers: getAuthHeaders() });
+        // 401/403 — сессия недействительна: выходим, не показывая внутренних ошибок.
+        if (res.status === 401 || res.status === 403) {
+            clearSession();
+            return;
+        }
+        if (!res.ok) {
+            // Временная ошибка (сеть/сервер): не показываем внутренние детали,
+            // оставляем данные из localStorage как fallback.
+            if (modal) modal.style.display = 'none';
+            if (logoutBtn) logoutBtn.style.display = 'block';
+            updateUsageIndicator();
+            return;
+        }
+        const data = await res.json();
+        currentUser = {
+            id: data.user_id,
+            subscription: data.subscription_type,
+            email: data.email,
+            requests_used: data.requests_used,
+            requests_limit: data.requests_limit
+        };
+        localStorage.setItem('academic_writer_user', JSON.stringify(currentUser));
+        if (modal) modal.style.display = 'none';
+        if (logoutBtn) logoutBtn.style.display = 'block';
+        updateUsageIndicator();
+    } catch (err) {
+        // Сеть/временная ошибка: не показываем внутренние детали.
+        if (modal) modal.style.display = 'none';
+        if (logoutBtn) logoutBtn.style.display = 'block';
+        updateUsageIndicator();
     }
 }
 
@@ -183,15 +220,19 @@ async function handleRegister(e) {
     finally { btn.disabled = false; btn.textContent = 'Создать аккаунт'; }
 }
 
-function logout() {
-    if (!confirm('Выйти из системы?')) return;
+function clearSession() {
     authToken = null; currentUser = null;
     localStorage.removeItem('academic_writer_token');
     localStorage.removeItem('academic_writer_user');
-    document.getElementById('auth-modal').style.display = 'flex';
-    
-    
-    document.getElementById('logout-btn').style.display = 'none';
+    const modal = document.getElementById('auth-modal');
+    const logoutBtn = document.getElementById('logout-btn');
+    if (modal) modal.style.display = 'flex';
+    if (logoutBtn) logoutBtn.style.display = 'none';
+}
+
+function logout() {
+    if (!confirm('Выйти из системы?')) return;
+    clearSession();
 }
 
 // ═══════════════════════════════════════════════════════════
