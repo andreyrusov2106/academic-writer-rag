@@ -19,7 +19,7 @@ from jose import JWTError, jwt
 import bcrypt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 # Загружаем переменные из .env ДО чтения настроек (иначе SECRET_KEY окажется пустым).
 load_dotenv()
@@ -39,7 +39,7 @@ security = HTTPBearer()
 # --- МОДЕЛИ ДЛЯ АВТОРИЗАЦИИ ---
 class UserCreate(BaseModel):
     email: str
-    password: str
+    password: str = Field(min_length=6, max_length=72)
 
 class UserLogin(BaseModel):
     email: str
