@@ -58,6 +58,26 @@ class Token(BaseModel):
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger(__name__)
 
+# --- БЕЗОПАСНЫЕ СООБЩЕНИЯ ОБ ОШИБКАХ ДЛЯ КЛИЕНТА (S-11) ---
+# Сырые тексты исключений, стектрейсы и тела ответов внешних API (DeepSeek, OpenAlex)
+# никогда не должны попадать в ответ клиенту — только в серверный лог.
+INTERNAL_ERROR_MSG = "Внутренняя ошибка сервера. Попробуйте ещё раз позже."
+EXTERNAL_API_ERROR_MSG = "Сервис анализа временно недоступен. Попробуйте ещё раз."
+# Ошибочные результаты /smart-action должны начинаться с U+FE0F: фронтенд
+# (frontend/js/smart-editor.js) распознаёт такой результат как ошибку и показывает
+# уведомление вместо вставки текста в документ.
+SMART_ACTION_ERROR_PREFIX = "️"
+# Максимальная длина тела ответа внешнего API, попадающего в серверный лог.
+_LOG_BODY_LIMIT = 500
+
+
+def _truncate_for_log(value, limit=_LOG_BODY_LIMIT):
+    """Обрезает тело ответа внешнего API для серверного лога (клиенту оно не отдаётся)."""
+    text = str(value)
+    if len(text) <= limit:
+        return text
+    return text[:limit] + f"... (обрезано, всего {len(text)} симв.)"
+
 # ═══════════════════════════════════════════════════════════
 # НАСТРОЙКИ
 # ═══════════════════════════════════════════════════════════
@@ -618,8 +638,8 @@ def ask_llm(question: str, context: str, history: list[dict], dual_language: boo
         )
         
         if not resp.ok:
-            log.error(f"❌ Ошибка DeepSeek API: статус {resp.status_code}")
-            return {"answer_ru": f"⚠️ Ошибка API ({resp.status_code})", "answer_cn": ""}
+            log.error(f"❌ Ошибка DeepSeek API: статус {resp.status_code}: {_truncate_for_log(resp.text)}")
+            return {"answer_ru": EXTERNAL_API_ERROR_MSG, "answer_cn": ""}
         
         full_answer = resp.json()["choices"][0]["message"]["content"]
         
@@ -631,8 +651,8 @@ def ask_llm(question: str, context: str, history: list[dict], dual_language: boo
         else:
             return {"answer_ru": full_answer, "answer_cn": ""}
     except Exception as e:
-        log.error(f"❌ Критическая ошибка DeepSeek: {e}")
-        return {"answer_ru": f"️ Ошибка: {e}", "answer_cn": ""}
+        log.exception("❌ Критическая ошибка DeepSeek")
+        return {"answer_ru": EXTERNAL_API_ERROR_MSG, "answer_cn": ""}
 
 # ═══════════════════════════════════════════════════════════
 # ENDPOINTS
@@ -723,8 +743,8 @@ async def ask_question(request: QueryRequest, current_user: dict = Depends(get_c
             similarity_scores=similarity_scores
         )
     except Exception as e:
-        log.error(f"Ошибка обработки запроса: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        log.exception("Ошибка обработки запроса")
+        raise HTTPException(status_code=500, detail=INTERNAL_ERROR_MSG)
     finally:
         if not success:
             refund_request(current_user["id"])
@@ -887,8 +907,8 @@ async def ask_question_stream(
             )
             
             if not resp.ok:
-                log.error(f"❌ Ошибка DeepSeek Stream: {resp.status_code}, текст: {resp.text}")
-                yield f"data: {json.dumps({'type': 'error', 'content': f'Ошибка API: {resp.text}'}, ensure_ascii=False)}\n\n"
+                log.error(f"❌ Ошибка DeepSeek Stream: {resp.status_code}, текст: {_truncate_for_log(resp.text)}")
+                yield f"data: {json.dumps({'type': 'error', 'content': EXTERNAL_API_ERROR_MSG}, ensure_ascii=False)}\n\n"
                 yield f"data: {json.dumps({'type': 'done'}, ensure_ascii=False)}\n\n"
                 return
                 
@@ -915,8 +935,8 @@ async def ask_question_stream(
             yield f"data: {json.dumps({'type': 'done'}, ensure_ascii=False)}\n\n"
 
         except Exception as e:
-            log.error(f"Ошибка стриминга: {e}")
-            yield f"data: {json.dumps({'type': 'error', 'content': str(e)}, ensure_ascii=False)}\n\n"
+            log.exception("Ошибка стриминга")
+            yield f"data: {json.dumps({'type': 'error', 'content': EXTERNAL_API_ERROR_MSG}, ensure_ascii=False)}\n\n"
         finally:
             # Если AI-запрос не был завершён успешно — возвращаем зарезервированный слот.
             if not success:
@@ -970,8 +990,8 @@ async def upload_pdf(
         else:
             return {"success": False, "error": result["error"]}
     except Exception as e:
-        log.error(f"Ошибка загрузки PDF: {e}")
-        return {"success": False, "error": str(e)}
+        log.exception("Ошибка загрузки PDF")
+        return {"success": False, "error": INTERNAL_ERROR_MSG}
 
 @app.post("/smart-action")
 async def smart_action(request: SmartActionRequest, current_user: dict = Depends(get_current_user)):
@@ -1069,16 +1089,16 @@ PLACEHOLDER_CONTEXT
         )
         
         if not resp.ok:
-            log.error(f"Ошибка smart-action: {resp.status_code} - {resp.text}")
-            return SmartActionResponse(result=f"⚠️ Ошибка API: {resp.status_code}", sources=sources)
+            log.error(f"Ошибка smart-action: {resp.status_code} - {_truncate_for_log(resp.text)}")
+            return SmartActionResponse(result=f"{SMART_ACTION_ERROR_PREFIX}{EXTERNAL_API_ERROR_MSG}", sources=sources)
         
         result = resp.json()["choices"][0]["message"]["content"]
         success = True
         return SmartActionResponse(result=result, sources=sources)
 
     except Exception as e:
-        log.error(f"Ошибка smart-action: {e}")
-        return SmartActionResponse(result=f"️ Ошибка: {e}", sources=[])
+        log.exception("Ошибка smart-action")
+        return SmartActionResponse(result=f"{SMART_ACTION_ERROR_PREFIX}{EXTERNAL_API_ERROR_MSG}", sources=[])
     finally:
         # Если AI-запрос не был завершён успешно — возвращаем зарезервированный слот.
         if not success:
@@ -1098,10 +1118,11 @@ async def health_check():
             "documents_count": count
         }
     except Exception as e:
+        log.exception("Ошибка проверки состояния БД")
         return {
             "status": "unhealthy",
             "database": "disconnected",
-            "error": str(e)
+            "error": INTERNAL_ERROR_MSG
         }
     finally:
         if conn is not None:
@@ -1177,8 +1198,8 @@ async def list_documents(current_user: dict = Depends(get_current_user)):
         ]
         return {"documents": documents}
     except Exception as e:
-        log.error(f"Ошибка получения документов: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        log.exception("Ошибка получения документов")
+        raise HTTPException(status_code=500, detail=INTERNAL_ERROR_MSG)
 
 
 @app.delete("/documents")
@@ -1224,8 +1245,8 @@ async def delete_document(
     except HTTPException:
         raise
     except Exception as e:
-        log.error(f"Ошибка удаления документа: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        log.exception("Ошибка удаления документа")
+        raise HTTPException(status_code=500, detail=INTERNAL_ERROR_MSG)
 
 # ═══════════════════════════════════════════════════════════
 # ADMIN: УПРАВЛЕНИЕ ДОСТУПОМ К СТАТЬЯМ
@@ -1307,8 +1328,8 @@ async def admin_list_users(current_user: dict = Depends(get_current_admin_user))
             ]
         }
     except Exception as e:
-        log.error(f"Ошибка получения списка пользователей: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        log.exception("Ошибка получения списка пользователей")
+        raise HTTPException(status_code=500, detail=INTERNAL_ERROR_MSG)
 
 
 @app.put("/admin/users/{user_id}")
@@ -1378,8 +1399,8 @@ async def admin_update_user(
                 conn.rollback()
             except Exception:
                 pass
-        log.error(f"Ошибка обновления пользователя {user_id}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        log.exception(f"Ошибка обновления пользователя {user_id}")
+        raise HTTPException(status_code=500, detail=INTERNAL_ERROR_MSG)
     finally:
         if conn is not None:
             conn.close()
@@ -1441,8 +1462,8 @@ async def admin_list_articles(current_user: dict = Depends(get_current_admin_use
             })
         return {"articles": articles}
     except Exception as e:
-        log.error(f"Ошибка получения административных статей: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        log.exception("Ошибка получения административных статей")
+        raise HTTPException(status_code=500, detail=INTERNAL_ERROR_MSG)
 
 
 @app.post("/admin/upload")
@@ -1525,9 +1546,9 @@ async def admin_upload_pdf(
             "global": len(user_ids) == 0 and len(specialty_codes) == 0,
         }
     except Exception as e:
-        log.error(f"Ошибка загрузки статьи администратором: {e}")
+        log.exception("Ошибка загрузки статьи администратором")
         _safe_remove(file_path)
-        return {"success": False, "error": str(e)}
+        return {"success": False, "error": INTERNAL_ERROR_MSG}
 
 
 @app.put("/admin/articles/{article_url}/access")
@@ -1574,8 +1595,8 @@ async def admin_set_article_access(
                 conn.rollback()
             except Exception:
                 pass
-        log.error(f"Ошибка обновления доступа к статье: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        log.exception("Ошибка обновления доступа к статье")
+        raise HTTPException(status_code=500, detail=INTERNAL_ERROR_MSG)
     finally:
         if conn is not None:
             conn.close()
@@ -1617,8 +1638,8 @@ async def admin_delete_article(article_url: str, current_user: dict = Depends(ge
                 conn.rollback()
             except Exception:
                 pass
-        log.error(f"Ошибка удаления статьи администратором: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        log.exception("Ошибка удаления статьи администратором")
+        raise HTTPException(status_code=500, detail=INTERNAL_ERROR_MSG)
     finally:
         if conn is not None:
             conn.close()
