@@ -286,7 +286,11 @@ async function sendChat() {
                         const data = JSON.parse(line.slice(6));
                         if (data.type === 'sources') {
                             if (data.sources) data.sources.forEach(s => { if (!allSources.some(x => x.title === s.title)) allSources.push(s); });
-                            sourcesHtml = '<div style="margin-top:10px;padding-top:10px;border-top:1px solid #ccc;font-size:12px;"><strong>📚 Источники:</strong><br>';
+                            sourcesHtml = '<div class="answer-sources">';
+                            sourcesHtml += '<button type="button" class="answer-sources-toggle" onclick="toggleAnswerSources(this)">'
+                                + '<span class="answer-sources-icon">▶</span> 📚 Источники (' + data.sources.length + ')'
+                                + '</button>';
+                            sourcesHtml += '<div class="answer-sources-body">';
                             data.sources.forEach((source, index) => {
                                 const sim = (data.similarity_scores[index] * 100).toFixed(1);
                                 const escT = escapeHtml(source.title).replace(/\n/g, ' ');
@@ -301,7 +305,7 @@ async function sendChat() {
                                 if (isOn && doi) sourcesHtml += `<a href="${doi}" target="_blank" style="color:#667eea;font-size:12px;"> Открыть (DOI)</a>`;
                                 sourcesHtml += `</div>`;
                             });
-                            sourcesHtml += '</div>';
+                            sourcesHtml += '</div></div>';
                         } else if (data.type === 'answer') {
                             fullAnswer += data.content;
                             answerDiv.innerHTML = fullAnswer.replace(/\n/g, '<br>') + sourcesHtml;
@@ -342,6 +346,17 @@ function insertCitation(title, text) {
         quill.setSelection(index + text.length + 10);
         quill.focus();
     }
+}
+
+// Переключатель блока источников в ответе ассистента: разворачивает/сворачивает список.
+function toggleAnswerSources(btn) {
+    const wrap = btn.parentElement; // .answer-sources
+    if (!wrap) return;
+    const body = wrap.querySelector('.answer-sources-body');
+    const icon = btn.querySelector('.answer-sources-icon');
+    if (!body) return;
+    const expanded = body.classList.toggle('expanded');
+    if (icon) icon.textContent = expanded ? '▼' : '▶';
 }
 // ═══════════════════════════════════════════════════════════
 // ИНДИКАТОР ЛИМИТОВ
@@ -745,12 +760,7 @@ async function loadDocuments() {
 
         // Источники — только список. upload-area остаётся статичной в academic-writer.html,
         // поэтому не копируем её сюда и не перепривязываем обработчики.
-        // Список по умолчанию свёрнут: клик по заголовку разворачивает/сворачивает тело списка.
-        let html = '<div class="my-sources-section">'
-            + '<button type="button" class="sources-toggle" onclick="toggleSourcesList(this)">'
-            + '<span class="sources-toggle-icon">▶</span> 📚 Мои источники (' + docs.length + ')'
-            + '</button>'
-            + '<div class="sources-body">';
+        let html = '<div class="my-sources-section"><h4 style="margin:10px 0;font-size:14px;color:var(--text-main);">📂 Мои источники</h4>';
 
         docs.forEach(doc => {
             const safeTitle = escapeHtml(doc.title);
@@ -764,23 +774,12 @@ async function loadDocuments() {
             </div>`;
         });
 
-        html += '</div></div>';
+        html += '</div>';
         sourcesList.innerHTML = html;
     } catch (e) {
         console.error('Ошибка загрузки документов:', e);
         sourcesList.innerHTML = '<div style="color:#e74c3c;font-size:13px;">Ошибка загрузки списка</div>';
     }
-}
-
-// Переключатель «Мои источники»: разворачивает/сворачивает тело списка.
-function toggleSourcesList(btn) {
-    const section = btn.closest('.my-sources-section');
-    if (!section) return;
-    const body = section.querySelector('.sources-body');
-    const icon = btn.querySelector('.sources-toggle-icon');
-    if (!body) return;
-    const expanded = body.classList.toggle('expanded');
-    if (icon) icon.textContent = expanded ? '▼' : '▶';
 }
 
 async function deleteDocument(articleUrl) {
