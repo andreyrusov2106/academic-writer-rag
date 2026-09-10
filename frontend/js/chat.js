@@ -743,12 +743,9 @@ async function loadDocuments() {
             return;
         }
 
-        // Сохраняем upload-area (если она есть)
-        const uploadArea = document.getElementById('upload-area');
-        let html = '';
-        if (uploadArea) html = uploadArea.outerHTML;
-
-        html += '<div class="my-sources-section"><h4 style="margin:10px 0;font-size:14px;color:var(--text-main);">📂 Мои источники</h4>';
+        // Источники — только список. upload-area остаётся статичной в academic-writer.html,
+        // поэтому не копируем её сюда и не перепривязываем обработчики.
+        let html = '<div class="my-sources-section"><h4 style="margin:10px 0;font-size:14px;color:var(--text-main);">📂 Мои источники</h4>';
 
         docs.forEach(doc => {
             const safeTitle = escapeHtml(doc.title);
@@ -764,17 +761,6 @@ async function loadDocuments() {
 
         html += '</div>';
         sourcesList.innerHTML = html;
-
-        // Восстанавливаем обработчики для upload-area
-        const newDropZone = document.getElementById('drop-zone');
-        const newPdfInput = document.getElementById('pdf-input');
-        if (newDropZone && newPdfInput) {
-            newDropZone.addEventListener('dragover', handleDragOver);
-            newDropZone.addEventListener('dragleave', () => newDropZone.classList.remove('dragover'));
-            newDropZone.addEventListener('drop', handleDrop);
-            newDropZone.addEventListener('click', () => newPdfInput.click());
-            newPdfInput.addEventListener('change', handleFileSelect);
-        }
     } catch (e) {
         console.error('Ошибка загрузки документов:', e);
         sourcesList.innerHTML = '<div style="color:#e74c3c;font-size:13px;">Ошибка загрузки списка</div>';
