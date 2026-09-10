@@ -457,6 +457,44 @@ body {
 .my-sources-section {
     margin-top: 12px;
 }
+
+/* Заголовок-переключатель списка источников */
+.sources-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 8px 10px;
+    margin: 0 0 8px;
+    background: var(--bg-container);
+    border: 1px solid var(--border-light);
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-main);
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.2s;
+}
+.sources-toggle:hover {
+    background: var(--primary-light);
+}
+.sources-toggle-icon {
+    display: inline-block;
+    min-width: 14px;
+    text-align: center;
+}
+
+/* Тело списка: по умолчанию свёрнуто (нулевая высота), .expanded — ограниченная высота со скроллом */
+.sources-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+.sources-body.expanded {
+    max-height: 320px;
+    overflow-y: auto;
+}
 .doc-item {
     display: flex;
     justify-content: space-between;

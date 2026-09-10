@@ -745,7 +745,12 @@ async function loadDocuments() {
 
         // Источники — только список. upload-area остаётся статичной в academic-writer.html,
         // поэтому не копируем её сюда и не перепривязываем обработчики.
-        let html = '<div class="my-sources-section"><h4 style="margin:10px 0;font-size:14px;color:var(--text-main);">📂 Мои источники</h4>';
+        // Список по умолчанию свёрнут: клик по заголовку разворачивает/сворачивает тело списка.
+        let html = '<div class="my-sources-section">'
+            + '<button type="button" class="sources-toggle" onclick="toggleSourcesList(this)">'
+            + '<span class="sources-toggle-icon">▶</span> 📚 Мои источники (' + docs.length + ')'
+            + '</button>'
+            + '<div class="sources-body">';
 
         docs.forEach(doc => {
             const safeTitle = escapeHtml(doc.title);
@@ -759,12 +764,23 @@ async function loadDocuments() {
             </div>`;
         });
 
-        html += '</div>';
+        html += '</div></div>';
         sourcesList.innerHTML = html;
     } catch (e) {
         console.error('Ошибка загрузки документов:', e);
         sourcesList.innerHTML = '<div style="color:#e74c3c;font-size:13px;">Ошибка загрузки списка</div>';
     }
+}
+
+// Переключатель «Мои источники»: разворачивает/сворачивает тело списка.
+function toggleSourcesList(btn) {
+    const section = btn.closest('.my-sources-section');
+    if (!section) return;
+    const body = section.querySelector('.sources-body');
+    const icon = btn.querySelector('.sources-toggle-icon');
+    if (!body) return;
+    const expanded = body.classList.toggle('expanded');
+    if (icon) icon.textContent = expanded ? '▼' : '▶';
 }
 
 async function deleteDocument(articleUrl) {
