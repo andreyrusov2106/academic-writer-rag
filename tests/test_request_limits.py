@@ -355,7 +355,7 @@ def test_missing_secret_key_fails_fast():
 # Определение лимита по тарифу (PLANS)
 # ─────────────────────────────────────────────────────────────
 def test_get_plan_requests_limit_free():
-    assert rag_api.get_plan_requests_limit("free") == 10
+    assert rag_api.get_plan_requests_limit("free") == 100
 
 
 def test_get_plan_requests_limit_pro():

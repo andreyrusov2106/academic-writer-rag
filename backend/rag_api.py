@@ -107,7 +107,7 @@ DEFAULT_PLAN = "free"
 PLANS = {
     "free": {
         "name": "Free",
-        "requests_limit": 10,
+        "requests_limit": 100,
     },
     "pro": {
         "name": "Pro",
