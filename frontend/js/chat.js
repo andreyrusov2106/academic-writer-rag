@@ -8,7 +8,9 @@ let chatHistory = [];
 let allSources = [];
 let isStreaming = false;
 let authToken = localStorage.getItem('academic_writer_token');
-let currentUser = JSON.parse(localStorage.getItem('academic_writer_user') || 'null');
+let currentUser = null;
+try { currentUser = JSON.parse(localStorage.getItem('academic_writer_user') || 'null'); }
+catch (e) { currentUser = null; }
 
 // ═══════════════════════════════════════════════════════════
 // УТИЛИТЫ
@@ -25,7 +27,9 @@ function escapeHtml(str) {
 // ═══════════════════════════════════════════════════════════
 // ТЕРМИНЫ
 // ═══════════════════════════════════════════════════════════
-let terms = JSON.parse(localStorage.getItem('academic_writer_terms') || '[]');
+let terms = [];
+try { terms = JSON.parse(localStorage.getItem('academic_writer_terms') || '[]'); }
+catch (e) { terms = []; }
 
 function showAddTermModal() {
     document.getElementById('add-term-modal').style.display = 'flex';
@@ -259,8 +263,12 @@ function logout() {
 function initChat() {
     const savedChat = localStorage.getItem('academic_writer_chat_history');
     if (savedChat) {
-        chatHistory = JSON.parse(savedChat);
-        chatHistory.forEach(msg => renderChatMessage(msg.role, msg.text));
+        try {
+            chatHistory = JSON.parse(savedChat);
+            chatHistory.forEach(msg => renderChatMessage(msg.role, msg.text));
+        } catch (e) {
+            chatHistory = [];
+        }
     }
 }
 
