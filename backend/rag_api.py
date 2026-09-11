@@ -224,8 +224,6 @@ def search_openalex(query: str, limit: int = 5) -> list[dict]:
             if len(abstract) > 1000:
                 abstract = abstract[:1000] + "..."
 
-            abstract_text = f"Научная статья: «{title}». Авторы: {authors}. Год: {year}.\nАННОТАЦИЯ: {abstract}"
-            
             # ✅ Формируем текст с акцентом на авторитетность источника
             citation_note = f" (Высокоцитируемая работа: {citations} цитирований)" if citations > 50 else f" ({citations} цитирований)"
             
