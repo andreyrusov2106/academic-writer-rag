@@ -30,6 +30,9 @@ function escapeHtml(str) {
 function clearToken() {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
+    localStorage.removeItem('academic_writer_chat_history');
+    localStorage.removeItem('academic_writer_content');
+    localStorage.removeItem('academic_writer_terms');
 }
 
 function redirectToLogin() {

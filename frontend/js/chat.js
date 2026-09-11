@@ -224,6 +224,24 @@ function clearSession() {
     authToken = null; currentUser = null;
     localStorage.removeItem('academic_writer_token');
     localStorage.removeItem('academic_writer_user');
+    // User-scoped данные: удаляем, чтобы не попали следующему пользователю.
+    localStorage.removeItem('academic_writer_chat_history');
+    localStorage.removeItem('academic_writer_content');
+    localStorage.removeItem('academic_writer_terms');
+    // Сброс содержимого Quill-редактора в памяти (иначе User B увидит текст User A).
+    if (typeof quill !== 'undefined' && quill) {
+        quill.setContents([]);
+    }
+    // Сброс in-memory состояния.
+    chatHistory = [];
+    allSources = [];
+    terms = [];
+    // Очистка DOM: чат и список терминов (без пользовательских данных).
+    const messagesDiv = document.getElementById('chat-messages');
+    if (messagesDiv) {
+        messagesDiv.innerHTML = `<div class="chat-message bot">Здравствуйте! Я — Наталья Петровна Копцева. Чем могу помочь?</div>`;
+    }
+    renderTerms();
     const modal = document.getElementById('auth-modal');
     const logoutBtn = document.getElementById('logout-btn');
     if (modal) modal.style.display = 'flex';
@@ -297,10 +315,7 @@ async function sendChat() {
 
         if (response.status === 401) {
             alert('Сессия истекла. Войдите снова.');
-            localStorage.removeItem('academic_writer_token');
-            localStorage.removeItem('academic_writer_user');
-            authToken = null;
-            document.getElementById('auth-modal').style.display = 'flex';
+            clearSession();
             answerDiv.innerHTML = '<span style="color: red;">Требуется авторизация.</span>';
             sendBtn.disabled = false; isStreaming = false; return;
         }
@@ -766,10 +781,7 @@ async function uploadPdf(file) {
         
         if (response.status === 401) {
             alert('Сессия истекла. Войдите снова.');
-            localStorage.removeItem('academic_writer_token');
-            localStorage.removeItem('academic_writer_user');
-            authToken = null;
-            document.getElementById('auth-modal').style.display = 'flex';
+            clearSession();
             return;
         }
         
@@ -832,6 +844,11 @@ async function loadDocuments() {
         const res = await fetch(`${API_URL}/documents`, {
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
+
+        if (res.status === 401) {
+            clearSession();
+            return;
+        }
 
         if (!res.ok) {
             sourcesList.innerHTML = '<div style="color:#999;font-size:13px;">Нет загруженных источников</div>';
@@ -900,6 +917,11 @@ async function deleteDocument(articleUrl) {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
+
+        if (res.status === 401) {
+            clearSession();
+            return;
+        }
 
         if (!res.ok) {
             const err = await res.json();
