@@ -304,7 +304,10 @@ async function sendChat() {
     answerDiv.innerHTML = '<em>Думаю...</em>';
     document.getElementById('chat-messages').appendChild(answerDiv);
 
-    let fullAnswer = ''; let sourcesEl = null;
+    let fullAnswer = ''; let sourcesEl = null; let completed = false;
+    const controller = new AbortController();
+    // Таймаут запроса: если fetch/чтение SSE зависает — прерываем через 120 с.
+    const timeoutId = setTimeout(() => controller.abort(), 120000);
 
     try {
         const historyToSend = chatHistory.slice(-6).map(msg => ({
@@ -317,6 +320,7 @@ async function sendChat() {
 
         const response = await fetch(`${API_URL}/ask-stream`, {
             method: 'POST', headers: getAuthHeaders(),
+            signal: controller.signal,
             body: JSON.stringify({
                 question: question, match_count: 5, match_threshold: 0.2,
                 dual_language: false, history: historyToSend,
@@ -340,7 +344,7 @@ async function sendChat() {
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
-        let buffer = ''; answerDiv.innerHTML = '';
+        let buffer = '';
 
         while (true) {
             const { done, value } = await reader.read();
@@ -356,24 +360,38 @@ async function sendChat() {
                             sourcesEl = buildAnswerSources(data);
                             renderAssistantAnswer(answerDiv, fullAnswer, sourcesEl);
                         } else if (data.type === 'answer') {
+                            // «Думаю...» убираем только перед первым реальным чанком ответа.
+                            if (!fullAnswer) answerDiv.innerHTML = '';
                             fullAnswer += data.content;
                             renderAssistantAnswer(answerDiv, fullAnswer, sourcesEl);
                             document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight;
                         } else if (data.type === 'done') {
+                            completed = true;
                             renderAssistantAnswer(answerDiv, fullAnswer, sourcesEl);
                             chatHistory.push({ role: 'bot', text: fullAnswer });
                             localStorage.setItem('academic_writer_chat_history', JSON.stringify(chatHistory));
                             incrementLocalCounter(); // ✅ Увеличиваем счётчик после успешного ответа
                         } else if (data.type === 'error') {
+                            // Сервер уже сообщил об ошибке — не перекрываем её «соединение прервано».
+                            completed = true;
                             renderAssistantError(answerDiv, data.content);
                         }
                     } catch (e) { console.error('Parse error:', e); }
                 }
             }
         }
+
+        // Поток завершился EOF без события done/error — соединение оборвалось.
+        if (!completed) {
+            renderAssistantError(answerDiv, 'Соединение с ассистентом прервано. Попробуйте ещё раз.');
+        }
     } catch (error) {
-        renderAssistantError(answerDiv, error.message);
+        // Не показываем сырые технические ошибки (error.message / «Failed to fetch» / abort).
+        if (!completed) {
+            renderAssistantError(answerDiv, 'Не удалось получить ответ. Попробуйте ещё раз.');
+        }
     } finally {
+        clearTimeout(timeoutId);
         sendBtn.disabled = false; isStreaming = false;
         document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight;
     }
