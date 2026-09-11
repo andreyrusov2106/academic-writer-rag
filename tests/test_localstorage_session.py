@@ -122,6 +122,14 @@ def test_clear_session_resets_quill_editor():
         "clearSession не сбрасывает содержимое Quill-редактора"
 
 
+def test_clear_session_resets_usage_indicator():
+    body = _extract_clear_session()
+    assert "getElementById('usage-indicator')" in body, \
+        "clearSession не сбрасывает #usage-indicator"
+    assert "indicator.textContent = '0 / 100 запросов (free)'" in body, \
+        "clearSession не задаёт дефолтное значение usage-indicator"
+
+
 if __name__ == "__main__":
     import pytest
 

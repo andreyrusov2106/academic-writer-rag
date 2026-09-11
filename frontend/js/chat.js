@@ -246,6 +246,9 @@ function clearSession() {
         messagesDiv.innerHTML = `<div class="chat-message bot">Здравствуйте! Я — Наталья Петровна Копцева. Чем могу помочь?</div>`;
     }
     renderTerms();
+    // Сброс индикатора использования запросов (иначе виден счётчик предыдущего пользователя).
+    const indicator = document.getElementById('usage-indicator');
+    if (indicator) indicator.textContent = '0 / 100 запросов (free)';
     const modal = document.getElementById('auth-modal');
     const logoutBtn = document.getElementById('logout-btn');
     if (modal) modal.style.display = 'flex';
