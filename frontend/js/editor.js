@@ -56,7 +56,6 @@ function applyGost(showNotification = true) {
     if (showNotification) {
         showNotification(`Применён: ${select.options[select.selectedIndex].text}`);
     }
-    localStorage.setItem('academic_writer_gost', select.value);
 }
 
 function generateTOC() {

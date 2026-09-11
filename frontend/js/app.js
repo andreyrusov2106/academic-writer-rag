@@ -58,14 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         showNotification(' Документ восстановлен');
     }
-    
-    // Загрузка ГОСТ
-    const savedGost = localStorage.getItem('academic_writer_gost');
-    if (savedGost) {
-        document.getElementById('gost-select').value = savedGost;
-        applyGost(false);
-    }
-    
+
     // Проверка API
     checkApiStatus();
     
