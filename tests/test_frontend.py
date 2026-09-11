@@ -9,7 +9,7 @@ from pathlib import Path
 BASE_DIR = Path(__file__).parent.parent
 FRONTEND_DIR = BASE_DIR / "frontend"
 CSS_FILE = FRONTEND_DIR / "css" / "styles.css"
-HTML_FILE = FRONTEND_DIR / "ademic-writer.html"
+HTML_FILE = FRONTEND_DIR / "academic-writer.html"
 
 
 class TestCSSStyles:

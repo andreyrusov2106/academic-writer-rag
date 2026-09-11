@@ -171,6 +171,14 @@ function loadTheme() {
     }
 }
 
+// Привязка переключателя темы (единственный обработчик на #theme-toggle-btn)
+document.addEventListener('DOMContentLoaded', () => {
+    const themeToggleBtn = document.getElementById('theme-toggle-btn');
+    if (themeToggleBtn) {
+        themeToggleBtn.addEventListener('click', toggleTheme);
+    }
+});
+
 // Экспорт функций в глобальную область видимости для использования в HTML
 window.generateTOC = generateTOC;
 window.generateBibliography = generateBibliography;

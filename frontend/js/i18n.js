@@ -138,12 +138,6 @@ if (dragDropText) dragDropText.textContent = t.dragDropText;
 document.addEventListener('DOMContentLoaded', () => {
 updateInterfaceText();
 
-// Обработчик клика на кнопку переключения темы
-const themeToggleBtn = document.getElementById('theme-toggle-btn');
-if (themeToggleBtn) {
-    themeToggleBtn.addEventListener('click', toggleTheme);
-}
-
 // Обработчик клика на кнопку переключения языка
 const langToggle = document.getElementById('lang-toggle');
 if (langToggle) {

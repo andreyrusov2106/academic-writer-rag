@@ -519,26 +519,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initChat();
     renderTerms();
     
-    // Инициализация темы
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    const themeIcon = document.querySelector('.theme-icon');
-    if (themeIcon) {
-        themeIcon.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
-    }
-    if (savedTheme === 'dark') {
-        document.body.classList.add('dark-theme');
-    }
-    
-    // Переключатель темы (в хедере и в левой панели)
-    const themeBtn = document.getElementById('theme-toggle-btn');
-    const themeBtnLeft = document.getElementById('theme-toggle-btn-left');
-    if (themeBtn) {
-        themeBtn.addEventListener('click', toggleTheme);
-    }
-    if (themeBtnLeft) {
-        themeBtnLeft.addEventListener('click', toggleTheme);
-    }
-    
     // Инициализация вкладок
     const tabButtons = document.querySelectorAll('.tab-btn');
     const tabContents = document.querySelectorAll('.tab-content');
@@ -568,22 +548,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
-
-// ═══════════════════════════════════════════════════════════
-// ПЕРЕКЛЮЧЕНИЕ ТЕМЫ
-// ═══════════════════════════════════════════════════════════
-function toggleTheme() {
-    document.body.classList.toggle('dark-theme');
-    const isDark = document.body.classList.contains('dark-theme');
-    
-    // Обновляем иконку в хедере
-    const themeIcon = document.querySelector('.theme-icon');
-    if (themeIcon) {
-        themeIcon.textContent = isDark ? '☀️' : '🌙';
-    }
-    
-    localStorage.setItem('theme', isDark ? 'dark' : 'light');
-}
 
 // ═══════════════════════════════════════════════════════════
 // DROPDOWN МЕНЮ ДЛЯ ЭКСПОРТА И ГОСТ
